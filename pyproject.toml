@@ -126,13 +126,7 @@ ignore = [
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"nautobot_cloud_models/migrations/*" = [
-    "D",
-]
-"nautobot_cloud_models/tests/*" = [
-    "D",
-    "S"
-]
+"development/*.py" = ["F405", "F403"]
 
 [tool.coverage.run]
 disable_warnings = ["already-imported"]
@@ -141,9 +135,7 @@ omit = [
     # Skip Tests
     "*/tests/*",
 ]
-include = [
-    "nautobot_cloud_models/*",
-]
+
 
 [tool.pymarkdown]
 # Seems to be not support for whitelisting rules: https://github.com/jackdewinter/pymarkdown/issues/1396
@@ -201,56 +193,3 @@ plugins.pml100.enabled = false
 plugins.pml101.enabled = true # list-anchored-indent
 plugins.pml102.enabled = false
 plugins.pml103.enabled = false
-
-[tool.towncrier]
-package = "nautobot_cloud_models"
-directory = "changes"
-filename = "docs/admin/release_notes/version_X.Y.md"
-template = "development/towncrier_template.j2"
-start_string = "<!-- towncrier release notes start -->"
-issue_format = "[#{issue}](https://github.com/trovesec/nautobot-app-cloud-models/issues/{issue})"
-
-[[tool.towncrier.type]]
-directory = "security"
-name = "Security"
-showcontent = true
-
-[[tool.towncrier.type]]
-directory = "added"
-name = "Added"
-showcontent = true
-
-[[tool.towncrier.type]]
-directory = "changed"
-name = "Changed"
-showcontent = true
-
-[[tool.towncrier.type]]
-directory = "deprecated"
-name = "Deprecated"
-showcontent = true
-
-[[tool.towncrier.type]]
-directory = "removed"
-name = "Removed"
-showcontent = true
-
-[[tool.towncrier.type]]
-directory = "fixed"
-name = "Fixed"
-showcontent = true
-
-[[tool.towncrier.type]]
-directory = "dependencies"
-name = "Dependencies"
-showcontent = true
-
-[[tool.towncrier.type]]
-directory = "documentation"
-name = "Documentation"
-showcontent = true
-
-[[tool.towncrier.type]]
-directory = "housekeeping"
-name = "Housekeeping"
-showcontent = true
