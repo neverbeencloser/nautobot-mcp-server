@@ -1,0 +1,80 @@
+---
+x-build: &build
+  image: "${DOCKER_REPO}/${DOCKER_REGISTRY}/nautobot-mcp-server:${VERSION:-1.0.0}"
+  build:
+    context: "../"
+    dockerfile: "develop/Dockerfile"
+    platforms:
+      - "linux/amd64"
+      - "linux/arm64"
+    tags:
+      - "${DOCKER_REPO}/${DOCKER_REGISTRY}/nautobot-mcp-server:${VERSION:-1.0.0}"
+    args:
+      NAUTOBOT_VER: "${NAUTOBOT_VER:-2.4.8}"
+      PYTHON_VER: "${PYTHON_VER:-3.11}"
+  volumes:
+    - "./nautobot_config.py:/opt/nautobot/nautobot_config.py"
+    - "../:/source"
+  env_file:
+    - ".env"
+  tty: true
+
+services:
+
+  nautobot:
+    hostname: "nautobot"
+    command: "nautobot-server runserver 0.0.0.0:8080 --nothreading --insecure"
+    environment:
+      NAUTOBOT_DB_HOST: "db"
+    depends_on:
+      - "db"
+      - "redis"
+    volumes:
+      - "./nautobot_config.py:/opt/nautobot/nautobot_config.py"
+      - "../:/opt/nautobot/jobs/import_jobs/:ro"
+      - "../:/source"
+    ports:
+      - "8080:8080"
+    <<: *build
+
+  worker:
+    hostname: "nautobot-worker"
+    entrypoint:
+      - "sh"
+      - "-c"
+      - "watchmedo auto-restart --directory './' --pattern '*.py' --recursive -- nautobot-server celery worker -l DEBUG --events"
+    depends_on:
+      - "nautobot"
+    volumes:
+      - "./nautobot_config.py:/opt/nautobot/nautobot_config.py"
+      - "../:/opt/nautobot/jobs/import_jobs/:ro"
+      - "../:/source"
+    environment:
+      NAUTOBOT_DB_HOST: "db"
+    <<: *build
+
+  db:
+    hostname: "db"
+    image: "postgres:13-alpine"
+    env_file:
+      - ".env"
+    volumes:
+      - "postgres_data:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: "10s"
+      timeout: "5s"
+      retries: 10
+
+  redis:
+    hostname: "redis"
+    image: "redis:6-alpine"
+    command:
+      - "sh"
+      - "-c"  # this is to evaluate the $REDIS_PASSWORD from the env
+      - "redis-server --appendonly yes --requirepass $$REDIS_PASSWORD"
+    env_file:
+      - ".env"
+
+volumes:
+  postgres_data: {}
