@@ -29,12 +29,7 @@ class NautobotMCPServer:
     def _get_client(self) -> pynautobot.api:
         """Get or create Nautobot client."""
         if not self.nautobot_client:
-            self.nautobot_client = pynautobot.api(
-                self.url,
-                token=self.token,
-                threading=True,
-                retries=3
-            )
+            self.nautobot_client = pynautobot.api(self.url, token=self.token, threading=True, retries=3)
         return self.nautobot_client
 
     def get_fastmcp_instance(self) -> FastMCP:

@@ -19,11 +19,7 @@ class DeviceTools(NautobotToolBase):
         """
 
         @mcp.tool()
-        def nautobot_list_devices(
-            ctx: Context,
-            limit: int = 10,
-            location: Optional[str] = None
-        ) -> str:
+        def nautobot_list_devices(ctx: Context, limit: int = 10, location: Optional[str] = None) -> str:
             """List all devices in Nautobot.
 
             Args:
@@ -55,8 +51,12 @@ class DeviceTools(NautobotToolBase):
                         "role": str(device.role) if device.role else None,
                         "location": str(device.location) if device.location else None,
                         "status": str(device.status) if device.status else None,
-                        "primary_ip4": str(device.primary_ip4) if hasattr(device, 'primary_ip4') and device.primary_ip4 else None,
-                        "primary_ip6": str(device.primary_ip6) if hasattr(device, 'primary_ip6') and device.primary_ip6 else None
+                        "primary_ip4": str(device.primary_ip4)
+                        if hasattr(device, "primary_ip4") and device.primary_ip4
+                        else None,
+                        "primary_ip6": str(device.primary_ip6)
+                        if hasattr(device, "primary_ip6") and device.primary_ip6
+                        else None,
                     }
                     result.append(device_info)
 
@@ -67,10 +67,7 @@ class DeviceTools(NautobotToolBase):
                 return self.log_and_return_error(ctx, "listing devices", e)
 
         @mcp.tool()
-        def nautobot_get_device(
-            ctx: Context,
-            device_id: str
-        ) -> str:
+        def nautobot_get_device(ctx: Context, device_id: str) -> str:
             """Get a specific device by ID or name.
 
             Args:
@@ -108,7 +105,7 @@ class DeviceTools(NautobotToolBase):
                         "asset_tag": device.asset_tag if device.asset_tag else None,
                         "primary_ip4": str(device.primary_ip4) if device.primary_ip4 else None,
                         "primary_ip6": str(device.primary_ip6) if device.primary_ip6 else None,
-                        "comments": device.comments if device.comments else None
+                        "comments": device.comments if device.comments else None,
                     }
 
                     ctx.info(f"Successfully retrieved device: {device.name}")
@@ -122,12 +119,7 @@ class DeviceTools(NautobotToolBase):
 
         @mcp.tool()
         def nautobot_create_device(
-            ctx: Context,
-            name: str,
-            device_type: str,
-            role: str,
-            location: str,
-            status: str = "active"
+            ctx: Context, name: str, device_type: str, role: str, location: str, status: str = "active"
         ) -> str:
             """Create a new device in Nautobot.
 
@@ -178,7 +170,7 @@ class DeviceTools(NautobotToolBase):
                     "device_type": device_type_obj.id,
                     "role": role_obj.id,
                     "location": location_obj.id,
-                    "status": status_obj.id
+                    "status": status_obj.id,
                 }
 
                 ctx.info(f"Creating device with data: {device_data}")
@@ -192,24 +184,17 @@ class DeviceTools(NautobotToolBase):
                     "site": str(new_device.site) if new_device.site else None,
                     "status": str(new_device.status) if new_device.status else None,
                     "created": str(new_device.created) if new_device.created else None,
-                    "url": new_device.url if hasattr(new_device, 'url') else None
+                    "url": new_device.url if hasattr(new_device, "url") else None,
                 }
 
                 ctx.info(f"Successfully created device: {new_device.name}")
-                return self.format_success(
-                    device_info,
-                    message="Device created successfully"
-                )
+                return self.format_success(device_info, message="Device created successfully")
 
             except Exception as e:
                 return self.log_and_return_error(ctx, "creating device", e)
 
         @mcp.tool()
-        def nautobot_update_device(
-            ctx: Context,
-            device_id: str,
-            **kwargs
-        ) -> str:
+        def nautobot_update_device(ctx: Context, device_id: str, **kwargs) -> str:
             """Update an existing device in Nautobot.
 
             Args:
@@ -282,23 +267,17 @@ class DeviceTools(NautobotToolBase):
                     "role": str(device.role) if device.role else None,
                     "site": str(device.site) if device.site else None,
                     "status": str(device.status) if device.status else None,
-                    "updated_fields": list(update_data.keys())
+                    "updated_fields": list(update_data.keys()),
                 }
 
                 ctx.info(f"Successfully updated device: {device.name}")
-                return self.format_success(
-                    device_info,
-                    message="Device updated successfully"
-                )
+                return self.format_success(device_info, message="Device updated successfully")
 
             except Exception as e:
                 return self.log_and_return_error(ctx, "updating device", e)
 
         @mcp.tool()
-        def nautobot_delete_device(
-            ctx: Context,
-            device_id: str
-        ) -> str:
+        def nautobot_delete_device(ctx: Context, device_id: str) -> str:
             """Delete a device from Nautobot.
 
             Args:
@@ -331,8 +310,7 @@ class DeviceTools(NautobotToolBase):
 
                 ctx.info(f"Successfully deleted device: {device_name}")
                 return self.format_success(
-                    {"deleted": device_name},
-                    message=f"Device '{device_name}' deleted successfully"
+                    {"deleted": device_name}, message=f"Device '{device_name}' deleted successfully"
                 )
 
             except Exception as e:
