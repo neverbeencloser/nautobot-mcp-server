@@ -181,7 +181,7 @@ class DeviceTools(NautobotToolBase):
                     "name": new_device.name,
                     "device_type": str(new_device.device_type) if new_device.device_type else None,
                     "role": str(new_device.role) if new_device.role else None,
-                    "site": str(new_device.site) if new_device.site else None,
+                    "location": str(new_device.location) if new_device.location else None,
                     "status": str(new_device.status) if new_device.status else None,
                     "created": str(new_device.created) if new_device.created else None,
                     "url": new_device.url if hasattr(new_device, "url") else None,
