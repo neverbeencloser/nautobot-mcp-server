@@ -87,7 +87,7 @@ class LocationTools(NautobotToolBase):
 
                 # Try to get by ID first (UUID)
                 try:
-                    location = locations.get(location_id)
+                    location = locations.get(id=location_id)
                     ctx.debug(f"Found location by ID: {location_id}")
                 except Exception:
                     # If not found by ID, try by name
@@ -208,21 +208,25 @@ class LocationTools(NautobotToolBase):
 
                 # Get location type object
                 ctx.debug(f"Looking up location type: {location_type}")
+                location_type_obj = None
                 try:
-                    location_type_obj = client.dcim.location_types.get(location_type)
+                    location_type_obj = client.dcim.location_types.get(id=location_type)
                 except Exception:
                     try:
                         location_type_obj = client.dcim.location_types.get(name=location_type)
                     except Exception:
-                        ctx.error(f"Location type not found: {location_type}")
-                        return self.format_error(f"Location type not found: {location_type}")
+                        ctx.debug(f"Location type lookup failed for: {location_type}")
+
+                if not location_type_obj:
+                    ctx.error(f"Location type not found: {location_type}")
+                    return self.format_error(f"Location type not found: {location_type}")
 
                 # Get parent location if specified
                 parent_obj = None
                 if parent:
                     ctx.debug(f"Looking up parent location: {parent}")
                     try:
-                        parent_obj = client.dcim.locations.get(parent)
+                        parent_obj = client.dcim.locations.get(id=parent)
                     except Exception:
                         try:
                             parent_obj = client.dcim.locations.get(name=parent)

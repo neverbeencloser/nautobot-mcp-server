@@ -32,7 +32,7 @@ class JobTools(NautobotToolBase):
 
             try:
                 client = self._get_client()
-                jobs = client.extras.jobs.all()[:limit]
+                jobs = client.extras.jobs.filter(limit=limit)
 
                 result = []
                 for job in jobs:
@@ -174,17 +174,15 @@ class JobTools(NautobotToolBase):
                 result = job.run(**job_kwargs)
 
                 job_result_info = {
-                    "success": True,
                     "job_name": job.name,
                     "job_id": str(job.id),
                     "result_id": str(result.id) if hasattr(result, "id") else None,
                     "status": "Job started",
-                    "message": f"Job '{job.name}' has been started",
                     "parameters": job_kwargs,
                 }
 
                 ctx.info(f"Successfully started job: {job.name}")
-                return self.format_success(job_result_info)
+                return self.format_success(job_result_info, message=f"Job '{job.name}' started successfully")
 
             except Exception as e:
                 return self.log_and_return_error(ctx, "running job", e)
@@ -223,8 +221,9 @@ class JobTools(NautobotToolBase):
                 for result in results:
                     result_info = {
                         "id": str(result.id),
-                        "job_name": result.job_model.name if hasattr(result, "job_model") else None,
-                        "status": result.status if hasattr(result, "status") else None,
+                        "name": result.name if hasattr(result, "name") else None,
+                        "job": str(result.job) if hasattr(result, "job") else None,
+                        "status": str(result.status) if hasattr(result, "status") else None,
                         "created": str(result.created) if hasattr(result, "created") else None,
                         "completed": str(result.completed) if hasattr(result, "completed") else None,
                         "user": str(result.user) if hasattr(result, "user") else None,
@@ -255,13 +254,14 @@ class JobTools(NautobotToolBase):
                 client = self._get_client()
                 job_results = client.extras.job_results
 
-                result = job_results.get(result_id)
+                result = job_results.get(id=result_id)
 
                 if result:
                     result_info = {
                         "id": str(result.id),
-                        "job_name": result.job_model.name if hasattr(result, "job_model") else None,
-                        "status": result.status if hasattr(result, "status") else None,
+                        "name": result.name if hasattr(result, "name") else None,
+                        "job": str(result.job) if hasattr(result, "job") else None,
+                        "status": str(result.status) if hasattr(result, "status") else None,
                         "created": str(result.created) if hasattr(result, "created") else None,
                         "completed": str(result.completed) if hasattr(result, "completed") else None,
                         "user": str(result.user) if hasattr(result, "user") else None,
@@ -298,39 +298,22 @@ class JobTools(NautobotToolBase):
                 client = self._get_client()
                 job_results = client.extras.job_results
 
-                result = job_results.get(result_id)
+                result = job_results.get(id=result_id)
 
                 if result:
                     log_info = {
-                        "result_id": str(result.id),
-                        "job_name": result.job_model.name if hasattr(result, "job_model") else None,
-                        "status": result.status if hasattr(result, "status") else None,
-                        "logs": [],
+                        "job_result_id": str(result.id),
+                        "job_name": result.name if hasattr(result, "name") else None,
+                        "status": str(result.status) if hasattr(result, "status") else None,
+                        "logs": result.log if hasattr(result, "log") else "",
                     }
-
-                    # Get job log entries if available
-                    if hasattr(result, "job_log_entries"):
-                        logs = result.job_log_entries.all()
-                        for log_entry in logs:
-                            log_info["logs"].append(
-                                {
-                                    "id": str(log_entry.id),
-                                    "created": str(log_entry.created),
-                                    "log_level": log_entry.log_level if hasattr(log_entry, "log_level") else None,
-                                    "grouping": log_entry.grouping if hasattr(log_entry, "grouping") else None,
-                                    "message": log_entry.message if hasattr(log_entry, "message") else None,
-                                    "absolute_url": log_entry.absolute_url
-                                    if hasattr(log_entry, "absolute_url")
-                                    else None,
-                                }
-                            )
 
                     # Also include general result info
                     if hasattr(result, "traceback") and result.traceback:
                         log_info["traceback"] = result.traceback
 
-                    ctx.info(f"Successfully retrieved {len(log_info['logs'])} log entries")
-                    return self.format_success(log_info)
+                    ctx.info(f"Successfully retrieved logs for job result: {result_id}")
+                    return self.format_success(log_info, message="Job logs retrieved successfully")
                 else:
                     ctx.warning(f"Job result not found: {result_id}")
                     return self.format_error(f"Job result not found: {result_id}")

@@ -7,7 +7,7 @@ REPO         := mcp
 REGISTRY     := local
 VERSION      := $(shell poetry version --short)
 NAUTOBOT_VER := $(shell grep '^nautobot = ' pyproject.toml | sed 's/nautobot = "\([^"]*\)"/\1/')
-COVERAGE_PCT := 40
+COVERAGE_PCT := 50
 
 # These variables should be the same
 VARIABLES := VERSION=$(VERSION) NAUTOBOT_VER=$(NAUTOBOT_VER) REPO=$(REPO) REGISTRY=$(REGISTRY)
@@ -72,33 +72,35 @@ endif
 tests: lint unittest ## Runs both code linting and unit tests in the dev container.
 .PHONY: tests
 
-lint: .env ## Runs code quality tests in the dev container.
-	@$(BASE) run --rm --entrypoint 'make _lint' nautobot
+lint: .env poetry-lock ## Runs code quality tests in the poetry env.
+	@make -s _ruff_lint
+	@echo "✅ All linting processes complete! 🎉"
 .PHONY: lint
 
-_lint: poetry-lock
-	@make -s _python_lint
-	@echo "✅ All linting processes complete! 🎉"
-.PHONY: _lint
+lint-fix: .env poetry-lock ## Runs code formatting and fixes linting issues in the poetry env.
+	@make -s _ruff_lint_fix
+	@echo "✅ All linting fixes applied! 🎉"
+.PHONY: lint-fix
 
-_python_lint:
+_ruff_lint:
 	@echo "🔍 Running Python Ruff Linting... 🔍"
 	@poetry run ruff format . --check --diff
-	@poetry run ruff check . --fix
-.PHONY: _python_lint
+	@poetry run ruff check .
+.PHONY: _ruff_lint
 
-unittest: .env ## Runs unit tests in the dev container.
-	@$(BASE) run --rm --entrypoint 'make _unittest' nautobot
+_ruff_lint_fix:
+	@echo "🔧 Running Python Ruff Linting with Auto-Fix... 🔧"
+	@poetry run ruff format .
+	@poetry run ruff check . --fix
+.PHONY: _ruff_lint_fix
+
+unittest: .env _unittest ## Runs unit tests in the poetry virtual env.
 .PHONY: unittest
 
 _unittest:
-	@echo "🧪 Running Python Unittest... 🧪"
-	@poetry run coverage run --module nautobot.core.cli test tests --buffer --keepdb --noinput --verbosity 2 --parallel 2
-	@poetry run coverage combine
-	@poetry run coverage report --fail-under=${COVERAGE_PCT}
-	@poetry run coverage html
+	@echo "🧪 Running PyTest with Coverage... 🧪"
+	@poetry run pytest tests/ --cov=nautobot_mcp_server --cov-report=html --cov-report=term-missing --cov-fail-under=${COVERAGE_PCT} -v
 .PHONY: _unittest
-
 
 install: .env ## Install the Nautobot development environment.
 	@echo "Installing Nautobot development environment..."
@@ -112,9 +114,9 @@ build:  ## Builds a new development container. Does not use cached data.
 	@cd development && $(BAKE) --no-cache nautobot
 .PHONY: build
 
-push:  ## Push the built image to the AWS ECR repository.
-	@echo "Pushing Nautobot image to AWS ECR..."
-	@cd development && $(BAKE) --push nautobot
+#push:  ## Push the built image to the AWS ECR repository.
+#	@echo "Pushing Nautobot image to AWS ECR..."
+#	@cd development && $(BAKE) --push nautobot
 
 
 # -------------------------------------------------------------------------------------------

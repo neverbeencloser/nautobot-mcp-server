@@ -21,27 +21,8 @@ nautobot_mcp_server/
 └── tools/                     # Modular tools implementation
     ├── __init__.py           # Tool registration and exports
     ├── base.py               # Shared NautobotToolBase class
-    ├── devices.py            # Device CRUD operations (5 tools)
-    ├── jobs.py               # Job management (6 tools)
-    └── sites.py              # Site CRUD operations (5 tools)
+    ├── <resource>.py         # Nautobot resource CRUD operations 
 ```
-
-## Key Features
-
-### Device Management (5 tools)
-- `nautobot_list_devices`: List devices with optional site filtering
-- `nautobot_get_device`: Retrieve specific device by ID/name
-- `nautobot_create_device`: Create new devices with validation
-- `nautobot_update_device`: Update existing devices with field validation
-- `nautobot_delete_device`: Remove devices from Nautobot
-
-### Job Management (6 tools)
-- `nautobot_list_jobs`: List available jobs in Nautobot
-- `nautobot_get_job`: Get detailed job information
-- `nautobot_run_job`: Execute jobs with parameters and commit/dryrun support
-- `nautobot_list_job_results`: List job execution results with filtering
-- `nautobot_get_job_result`: Get specific job result details
-- `nautobot_get_job_logs`: Retrieve job execution logs and tracebacks
 
 ## Development Architecture Decisions
 
@@ -84,24 +65,6 @@ export NAUTOBOT_TOKEN=your-api-token
 poetry run python -m nautobot_mcp_server --url http://localhost:8080 --token your-token --debug
 ```
 
-### Development Environment
-```bash
-# Start local Nautobot instance
-make start
-
-# View logs
-make logs
-
-# Access Nautobot shell
-make shell
-
-# Run tests and linting
-make tests
-
-# Build new container
-make build
-```
-
 ## API Response Format
 
 ### Success Response
@@ -126,6 +89,13 @@ make build
 
 ## Development Notes
 
+**Essential Commands**
+- `make start`: Start local Nautobot instance with Docker Compose
+- `make lint`: Run linters (flake8, black, mypy)
+- `make lint-fix`: Auto-fix linting issues
+- `make tests`: Run linting and unit tests with pytest
+- `make unittest`: Run only unit tests
+
 ### Adding New Resources
 1. Create new file in `tools/` directory (e.g., `interfaces.py`)
 2. Implement class inheriting from `NautobotToolBase`
@@ -137,6 +107,14 @@ make build
 - **Local Testing**: Use `test_mcp_client.py` with actual Nautobot instance
 - **Development Stack**: Docker Compose provides isolated Nautobot environment
 - **Integration Testing**: Can test against multiple Nautobot versions
+
+### Unit Test Standards
+
+- **Test Structure**: Follow `TestClassNameTools` pattern (e.g., `TestDeviceTools`, `TestLocationTools`)
+- **Setup Method**: Use `setUp()` to create mock client, context, and common test fixtures
+- **Mock Objects**: Use `MockRecord` from `conftest.py` for consistent Nautobot record mocking
+- **Function Registration**: Use `_register_and_get_function()` helper to test MCP tool registration
+- **Assertions**: Use descriptive assertions and verify both success/error response formats
 
 ## Integration Patterns
 
@@ -171,11 +149,7 @@ This MCP server is designed to work seamlessly with Claude Code for infrastructu
 ## Future Enhancements
 
 ### Planned Resources
-- **Interfaces**: Network interface management
-- **IP Addresses**: IP address and subnet management  
-- **Cables**: Physical and logical connections
-- **Circuits**: Provider circuit management
-- **Config Contexts**: Configuration context management
+- Support CRUD ops for all core Nautobot resources that have API endpoints
 
 ### Advanced Features
 - **Bulk Operations**: Multi-object CRUD operations
@@ -194,6 +168,8 @@ This MCP server is designed to work seamlessly with Claude Code for infrastructu
 ## Testing Notes
 
 - **Python Testing**: Always use `poetry run python` when testing Python code in this project to ensure proper dependency management
+- **Test Suite**: Run tests with `make unittest` or `poetry run pytest tests/ -v`
+- 
 
 ## Git Standards
 

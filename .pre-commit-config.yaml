@@ -8,6 +8,6 @@ repos:
     hooks:
       - id: "run lint"
         name: "run lint"
-        entry: "poetry run make lint"
+        entry: "make lint-fix"
         language: "system"
         pass_filenames: false
