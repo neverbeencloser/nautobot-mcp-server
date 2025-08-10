@@ -33,6 +33,7 @@ pip install mcp-server pynautobot
 ## Usage
 
 ### Running the MCP Server
+- url and token will default to dev locals if not provided
 
 You can run the server directly with Python:
 
@@ -46,6 +47,11 @@ Or use environment variables with the provided shell script:
 export NAUTOBOT_URL=http://localhost:8080
 export NAUTOBOT_TOKEN=your-api-token
 ./run_server.sh
+```
+
+### Claude Code (from repo root)
+```shell
+% claude mcp add nautobot -- poetry run python -m nautobot_mcp_server [--url http://your-nautobot-url --token your-api-token]
 ```
 
 ### Available Tools
@@ -115,9 +121,9 @@ The MCP server uses:
 
 ## Configuration
 
-The server requires two parameters:
-- `--url`: The Nautobot API URL (e.g., https://nautobot.example.com)
-- `--token`: A valid Nautobot API token with appropriate permissions
+The server accepts two parameters:
+- `--url`: The Nautobot API URL (e.g., https://nautobot.example.com), default: `http://localhost:8080`
+- `--token`: A valid Nautobot API token, default: 0123456789abcdef0123456789abcdef01234567
 
 ### Debug Mode
 
@@ -135,6 +141,11 @@ To add new Nautobot resources or operations:
 2. Implement the corresponding async methods (e.g., `_list_resources`, `_get_resource`)
 3. Add the tool case to the `call_tool()` handler
 4. Update tests and documentation
+
+## To-Do
+- Containerize the MCP server for flexible deployment
+- Add support for core Nautobot resources
+- Improve search, filtering functionality
 
 ## License
 
