@@ -35,13 +35,6 @@ nautobot_mcp_server/
 - `nautobot_update_device`: Update existing devices with field validation
 - `nautobot_delete_device`: Remove devices from Nautobot
 
-### Site Management (5 tools)
-- `nautobot_list_sites`: List sites with optional status filtering
-- `nautobot_get_site`: Get site by ID/name/slug with full details
-- `nautobot_create_site`: Create sites with auto-slug generation
-- `nautobot_update_site`: Update site properties
-- `nautobot_delete_site`: Remove sites from Nautobot
-
 ### Job Management (6 tools)
 - `nautobot_list_jobs`: List available jobs in Nautobot
 - `nautobot_get_job`: Get detailed job information
@@ -201,3 +194,32 @@ This MCP server is designed to work seamlessly with Claude Code for infrastructu
 ## Testing Notes
 
 - **Python Testing**: Always use `poetry run python` when testing Python code in this project to ensure proper dependency management
+
+## Git Standards
+
+**Commit Messages:**
+- Single-line message; include jira tag at start if branch name includes jira tag: `[PROJECT-##] feat: description`
+- Use conventional commit format: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+- Include your co-author signature in the commit msg.
+
+**Pull Requests:**
+- Title matches most recent commit message
+- Put model names and field names in backticks for clarity (e.g., `DeviceType`, `device_type_id`).
+- Use this template for the PR description:
+  ```markdown
+  ### What
+  - **Brief** summary (1-2 bullet points)
+
+  ### Why
+   - **Brief** explanation of the change and its purpose (1-2 bullet points)
+
+  ### How
+  - **Concise** implementation details; limit to 3-5 bullet points
+  - Breaking changes/migrations if any
+  
+  ### Proof
+  ```
+
+**Branch Info:**
+- Main branch: `main`
+- Uses GitHub Actions for CI/CD
