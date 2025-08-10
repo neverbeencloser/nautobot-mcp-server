@@ -4,17 +4,6 @@ An MCP (Model Context Protocol) server for interfacing with Nautobot API, enabli
 
 ## Features
 
-Currently implemented:
-- **Device Management**:
-  - List devices with optional filtering
-  - Get specific device by ID or name
-  - Create new devices
-- **Site Management**:
-  - List sites in Nautobot
-- **Job Execution**:
-  - Run Nautobot jobs with parameters
-  - Returns job execution status
-
 Built with FastMCP for:
 - Clean decorator-based tool registration
 - Built-in context logging and debugging
@@ -56,33 +45,17 @@ export NAUTOBOT_TOKEN=your-api-token
 
 ### Available Tools
 
-The MCP server exposes the following tools:
+The MCP server currently supports CRUD and get/list operations for:
+ - Devices
+ - Locations
 
-1. **nautobot_list_devices**: List all devices in Nautobot
-   - Parameters:
-     - `limit` (optional): Number of devices to return (default: 10)
-     - `site` (optional): Filter devices by site name
-
-2. **nautobot_get_device**: Get a specific device by ID or name
-   - Parameters:
-     - `device_id` (required): Device ID (UUID) or name
-
-3. **nautobot_create_device**: Create a new device in Nautobot
-   - Parameters:
-     - `name` (required): Device name
-     - `device_type` (required): Device type name
-     - `role` (required): Device role name
-     - `site` (required): Site name
-     - `status` (optional): Device status (default: "active")
-
-4. **nautobot_list_sites**: List all sites in Nautobot
-   - Parameters:
-     - `limit` (optional): Number of sites to return (default: 10)
-
-5. **nautobot_run_job**: Run a job in Nautobot
-   - Parameters:
-     - `job_name` (required): Name or slug of the job to run
-     - Additional keyword arguments as job parameters
+It also supports the following operations for Nautobot Jobs:
+ - `get_job`
+ - `list_jobs`
+ - `run_job`
+ - `list_job_results`
+ - `get_job_result`
+ - `get_job_logs`
 
 ### Testing
 
