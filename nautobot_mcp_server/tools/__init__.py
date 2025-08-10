@@ -9,7 +9,7 @@ __all__ = ["DeviceTools", "LocationTools", "JobTools", "register_all_tools"]
 
 def register_all_tools(mcp, client_getter):
     """Register all available tools with the MCP server.
-    
+
     Args:
         mcp: FastMCP instance
         client_getter: Callable that returns a pynautobot client

@@ -12,24 +12,20 @@ class LocationTools(NautobotToolBase):
 
     def register(self, mcp: FastMCP):
         """Register location tools with the MCP server.
-        
+
         Args:
             mcp: FastMCP instance to register tools with
         """
 
         @mcp.tool()
-        def nautobot_list_locations(
-            ctx: Context,
-            limit: int = 10,
-            status: Optional[str] = None
-        ) -> str:
+        def nautobot_list_locations(ctx: Context, limit: int = 10, status: Optional[str] = None) -> str:
             """List all locations in Nautobot.
-            
+
             Args:
                 ctx: MCP context for logging and progress
                 limit: Number of locations to return (default: 10)
                 status: Filter locations by status (optional)
-            
+
             Returns:
                 JSON string of location list
             """
@@ -50,15 +46,19 @@ class LocationTools(NautobotToolBase):
                     location_info = {
                         "id": str(location.id),
                         "name": location.name,
-                        "natural_slug": location.natural_slug if hasattr(location, 'natural_slug') else None,
-                        "tree_depth": location.tree_depth if hasattr(location, 'tree_depth') else None,
+                        "natural_slug": location.natural_slug if hasattr(location, "natural_slug") else None,
+                        "tree_depth": location.tree_depth if hasattr(location, "tree_depth") else None,
                         "status": str(location.status),
-                        "location_type": str(location.location_type) if hasattr(location, 'location_type') and location.location_type else None,
-                        "parent": str(location.parent) if hasattr(location, 'parent') and location.parent else None,
-                        "facility": location.facility if hasattr(location, 'facility') else None,
-                        "description": location.description if hasattr(location, 'description') else None,
-                        "time_zone": location.time_zone if hasattr(location, 'time_zone') else None,
-                        "physical_address": location.physical_address if hasattr(location, 'physical_address') else None
+                        "location_type": str(location.location_type)
+                        if hasattr(location, "location_type") and location.location_type
+                        else None,
+                        "parent": str(location.parent) if hasattr(location, "parent") and location.parent else None,
+                        "facility": location.facility if hasattr(location, "facility") else None,
+                        "description": location.description if hasattr(location, "description") else None,
+                        "time_zone": location.time_zone if hasattr(location, "time_zone") else None,
+                        "physical_address": location.physical_address
+                        if hasattr(location, "physical_address")
+                        else None,
                     }
                     result.append(location_info)
 
@@ -69,16 +69,13 @@ class LocationTools(NautobotToolBase):
                 return self.log_and_return_error(ctx, "listing locations", e)
 
         @mcp.tool()
-        def nautobot_get_location(
-            ctx: Context,
-            location_id: str
-        ) -> str:
+        def nautobot_get_location(ctx: Context, location_id: str) -> str:
             """Get a specific location by ID or name.
-            
+
             Args:
                 ctx: MCP context for logging and progress
                 location_id: Location ID (UUID), name, or natural_slug
-            
+
             Returns:
                 JSON string of location details
             """
@@ -106,32 +103,44 @@ class LocationTools(NautobotToolBase):
                     location_info = {
                         "id": str(location.id),
                         "name": location.name,
-                        "natural_slug": location.natural_slug if hasattr(location, 'natural_slug') else None,
-                        "tree_depth": location.tree_depth if hasattr(location, 'tree_depth') else None,
-                        "time_zone": location.time_zone if hasattr(location, 'time_zone') else None,
-                        "circuit_count": location.circuit_count if hasattr(location, 'circuit_count') else 0,
-                        "device_count": location.device_count if hasattr(location, 'device_count') else 0,
-                        "prefix_count": location.prefix_count if hasattr(location, 'prefix_count') else 0,
-                        "rack_count": location.rack_count if hasattr(location, 'rack_count') else 0,
-                        "virtual_machine_count": location.virtual_machine_count if hasattr(location, 'virtual_machine_count') else 0,
-                        "vlan_count": location.vlan_count if hasattr(location, 'vlan_count') else 0,
+                        "natural_slug": location.natural_slug if hasattr(location, "natural_slug") else None,
+                        "tree_depth": location.tree_depth if hasattr(location, "tree_depth") else None,
+                        "time_zone": location.time_zone if hasattr(location, "time_zone") else None,
+                        "circuit_count": location.circuit_count if hasattr(location, "circuit_count") else 0,
+                        "device_count": location.device_count if hasattr(location, "device_count") else 0,
+                        "prefix_count": location.prefix_count if hasattr(location, "prefix_count") else 0,
+                        "rack_count": location.rack_count if hasattr(location, "rack_count") else 0,
+                        "virtual_machine_count": location.virtual_machine_count
+                        if hasattr(location, "virtual_machine_count")
+                        else 0,
+                        "vlan_count": location.vlan_count if hasattr(location, "vlan_count") else 0,
                         "status": str(location.status),
-                        "location_type": str(location.location_type) if hasattr(location, 'location_type') and location.location_type else None,
-                        "parent": str(location.parent) if hasattr(location, 'parent') and location.parent else None,
-                        "tenant": str(location.tenant) if hasattr(location, 'tenant') and location.tenant else None,
-                        "facility": location.facility if hasattr(location, 'facility') else None,
-                        "asn": location.asn if hasattr(location, 'asn') else None,
-                        "description": location.description if hasattr(location, 'description') else None,
-                        "physical_address": location.physical_address if hasattr(location, 'physical_address') else None,
-                        "shipping_address": location.shipping_address if hasattr(location, 'shipping_address') else None,
-                        "latitude": str(location.latitude) if hasattr(location, 'latitude') and location.latitude else None,
-                        "longitude": str(location.longitude) if hasattr(location, 'longitude') and location.longitude else None,
-                        "contact_name": location.contact_name if hasattr(location, 'contact_name') else None,
-                        "contact_phone": location.contact_phone if hasattr(location, 'contact_phone') else None,
-                        "contact_email": location.contact_email if hasattr(location, 'contact_email') else None,
-                        "comments": location.comments if hasattr(location, 'comments') else None,
-                        "created": str(location.created) if hasattr(location, 'created') else None,
-                        "last_updated": str(location.last_updated) if hasattr(location, 'last_updated') else None
+                        "location_type": str(location.location_type)
+                        if hasattr(location, "location_type") and location.location_type
+                        else None,
+                        "parent": str(location.parent) if hasattr(location, "parent") and location.parent else None,
+                        "tenant": str(location.tenant) if hasattr(location, "tenant") and location.tenant else None,
+                        "facility": location.facility if hasattr(location, "facility") else None,
+                        "asn": location.asn if hasattr(location, "asn") else None,
+                        "description": location.description if hasattr(location, "description") else None,
+                        "physical_address": location.physical_address
+                        if hasattr(location, "physical_address")
+                        else None,
+                        "shipping_address": location.shipping_address
+                        if hasattr(location, "shipping_address")
+                        else None,
+                        "latitude": str(location.latitude)
+                        if hasattr(location, "latitude") and location.latitude
+                        else None,
+                        "longitude": str(location.longitude)
+                        if hasattr(location, "longitude") and location.longitude
+                        else None,
+                        "contact_name": location.contact_name if hasattr(location, "contact_name") else None,
+                        "contact_phone": location.contact_phone if hasattr(location, "contact_phone") else None,
+                        "contact_email": location.contact_email if hasattr(location, "contact_email") else None,
+                        "comments": location.comments if hasattr(location, "comments") else None,
+                        "created": str(location.created) if hasattr(location, "created") else None,
+                        "last_updated": str(location.last_updated) if hasattr(location, "last_updated") else None,
                     }
 
                     ctx.info(f"Successfully retrieved location: {location.name}")
@@ -160,10 +169,10 @@ class LocationTools(NautobotToolBase):
             longitude: Optional[str] = None,
             contact_name: Optional[str] = None,
             contact_phone: Optional[str] = None,
-            contact_email: Optional[str] = None
+            contact_email: Optional[str] = None,
         ) -> str:
             """Create a new location in Nautobot.
-            
+
             Args:
                 ctx: MCP context for logging and progress
                 name: Location name
@@ -181,7 +190,7 @@ class LocationTools(NautobotToolBase):
                 contact_name: Contact name (optional)
                 contact_phone: Contact phone (optional)
                 contact_email: Contact email (optional)
-            
+
             Returns:
                 JSON string of created location details
             """
@@ -222,11 +231,7 @@ class LocationTools(NautobotToolBase):
                             return self.format_error(f"Parent location not found: {parent}")
 
                 # Create the location
-                location_data = {
-                    "name": name,
-                    "location_type": location_type_obj.id,
-                    "status": status_obj.id
-                }
+                location_data = {"name": name, "location_type": location_type_obj.id, "status": status_obj.id}
 
                 # Add optional fields
                 if parent_obj:
@@ -260,35 +265,28 @@ class LocationTools(NautobotToolBase):
                 location_info = {
                     "id": str(new_location.id),
                     "name": new_location.name,
-                    "natural_slug": new_location.natural_slug if hasattr(new_location, 'natural_slug') else None,
+                    "natural_slug": new_location.natural_slug if hasattr(new_location, "natural_slug") else None,
                     "status": str(new_location.status),
                     "location_type": str(new_location.location_type),
                     "created": str(new_location.created),
-                    "url": new_location.url
+                    "url": new_location.url,
                 }
 
                 ctx.info(f"Successfully created location: {new_location.name}")
-                return self.format_success(
-                    location_info,
-                    message="Location created successfully"
-                )
+                return self.format_success(location_info, message="Location created successfully")
 
             except Exception as e:
                 return self.log_and_return_error(ctx, "creating location", e)
 
         @mcp.tool()
-        def nautobot_update_location(
-            ctx: Context,
-            location_id: str,
-            **kwargs
-        ) -> str:
+        def nautobot_update_location(ctx: Context, location_id: str, **kwargs) -> str:
             """Update an existing location in Nautobot.
-            
+
             Args:
                 ctx: MCP context for logging and progress
                 location_id: Location ID (UUID), name, or natural_slug
                 **kwargs: Fields to update (e.g., status, description, facility, parent)
-            
+
             Returns:
                 JSON string of updated location details
             """
@@ -334,7 +332,7 @@ class LocationTools(NautobotToolBase):
                             location_type_obj = client.dcim.location_types.get(name=kwargs["location_type"])
                         except Exception:
                             location_type_obj = None
-                    
+
                     if location_type_obj:
                         update_data["location_type"] = location_type_obj.id
                     else:
@@ -350,7 +348,7 @@ class LocationTools(NautobotToolBase):
                                 parent_obj = client.dcim.locations.get(name=kwargs["parent"])
                             except Exception:
                                 parent_obj = None
-                        
+
                         if parent_obj:
                             update_data["parent"] = parent_obj.id
                         else:
@@ -360,9 +358,18 @@ class LocationTools(NautobotToolBase):
 
                 # Handle simple fields
                 simple_fields = [
-                    "description", "facility", "asn", "time_zone", "physical_address",
-                    "shipping_address", "latitude", "longitude", "contact_name", 
-                    "contact_phone", "contact_email", "comments"
+                    "description",
+                    "facility",
+                    "asn",
+                    "time_zone",
+                    "physical_address",
+                    "shipping_address",
+                    "latitude",
+                    "longitude",
+                    "contact_name",
+                    "contact_phone",
+                    "contact_email",
+                    "comments",
                 ]
                 for field in simple_fields:
                     if field in kwargs:
@@ -377,31 +384,25 @@ class LocationTools(NautobotToolBase):
                 location_info = {
                     "id": str(location.id),
                     "name": location.name,
-                    "natural_slug": location.natural_slug if hasattr(location, 'natural_slug') else None,
+                    "natural_slug": location.natural_slug if hasattr(location, "natural_slug") else None,
                     "status": str(location.status),
-                    "updated_fields": list(update_data.keys())
+                    "updated_fields": list(update_data.keys()),
                 }
 
                 ctx.info(f"Successfully updated location: {location.name}")
-                return self.format_success(
-                    location_info,
-                    message="Location updated successfully"
-                )
+                return self.format_success(location_info, message="Location updated successfully")
 
             except Exception as e:
                 return self.log_and_return_error(ctx, "updating location", e)
 
         @mcp.tool()
-        def nautobot_delete_location(
-            ctx: Context,
-            location_id: str
-        ) -> str:
+        def nautobot_delete_location(ctx: Context, location_id: str) -> str:
             """Delete a location from Nautobot.
-            
+
             Args:
                 ctx: MCP context for logging and progress
                 location_id: Location ID (UUID), name, or natural_slug
-            
+
             Returns:
                 JSON string confirming deletion
             """
@@ -432,8 +433,7 @@ class LocationTools(NautobotToolBase):
 
                 ctx.info(f"Successfully deleted location: {location_name}")
                 return self.format_success(
-                    {"deleted": location_name},
-                    message=f"Location '{location_name}' deleted successfully"
+                    {"deleted": location_name}, message=f"Location '{location_name}' deleted successfully"
                 )
 
             except Exception as e:

@@ -8,9 +8,7 @@ from .server import NautobotMCPServer
 
 def main():
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description="Nautobot MCP Server for API operations"
-    )
+    parser = argparse.ArgumentParser(description="Nautobot MCP Server for API operations")
     parser.add_argument(
         "--url",
         required=False,
@@ -23,11 +21,7 @@ def main():
         help="Nautobot API token",
         default="0123456789abcdef0123456789abcdef01234567",
     )
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Enable debug logging"
-    )
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 
     args = parser.parse_args()
 
