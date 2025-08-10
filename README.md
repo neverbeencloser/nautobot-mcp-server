@@ -1,0 +1,141 @@
+# Nautobot MCP Server
+
+An MCP (Model Context Protocol) server for interfacing with Nautobot API, enabling AI agents to perform CRUD operations on Nautobot objects and manage jobs.
+
+## Features
+
+Currently implemented:
+- **Device Management**:
+  - List devices with optional filtering
+  - Get specific device by ID or name
+  - Create new devices
+- **Site Management**:
+  - List sites in Nautobot
+- **Job Execution**:
+  - Run Nautobot jobs with parameters
+  - Returns job execution status
+
+Built with FastMCP for:
+- Clean decorator-based tool registration
+- Built-in context logging and debugging
+- Structured error handling
+
+## Installation
+
+```bash
+# Install dependencies using Poetry
+poetry install
+
+# Or install directly with pip
+pip install mcp-server pynautobot
+```
+
+## Usage
+
+### Running the MCP Server
+
+You can run the server directly with Python:
+
+```bash
+python -m nautobot_mcp_server --url http://your-nautobot-url --token your-api-token
+```
+
+Or use environment variables with the provided shell script:
+
+```bash
+export NAUTOBOT_URL=http://localhost:8080
+export NAUTOBOT_TOKEN=your-api-token
+./run_server.sh
+```
+
+### Available Tools
+
+The MCP server exposes the following tools:
+
+1. **nautobot_list_devices**: List all devices in Nautobot
+   - Parameters:
+     - `limit` (optional): Number of devices to return (default: 10)
+     - `site` (optional): Filter devices by site name
+
+2. **nautobot_get_device**: Get a specific device by ID or name
+   - Parameters:
+     - `device_id` (required): Device ID (UUID) or name
+
+3. **nautobot_create_device**: Create a new device in Nautobot
+   - Parameters:
+     - `name` (required): Device name
+     - `device_type` (required): Device type name
+     - `role` (required): Device role name
+     - `site` (required): Site name
+     - `status` (optional): Device status (default: "active")
+
+4. **nautobot_list_sites**: List all sites in Nautobot
+   - Parameters:
+     - `limit` (optional): Number of sites to return (default: 10)
+
+5. **nautobot_run_job**: Run a job in Nautobot
+   - Parameters:
+     - `job_name` (required): Name or slug of the job to run
+     - Additional keyword arguments as job parameters
+
+### Testing
+
+Use the provided test client to verify the MCP server is working:
+
+```bash
+# Update the URL and token in test_mcp_client.py first
+python test_mcp_client.py
+```
+
+### Development Stack
+
+The `development/` folder contains a Docker Compose setup for running a local Nautobot instance:
+
+```bash
+make start
+```
+
+This will start Nautobot on `http://localhost:8080` with default credentials.
+
+Run `make help` for available commands.
+
+To fill your local dev Nautobot instance with sample data:
+```bash
+make cli
+nautobot-server generate_test_data
+```
+
+## Architecture
+
+The MCP server uses:
+- **FastMCP**: High-level MCP server framework with decorator-based tool registration
+- **pynautobot**: Python client for Nautobot API
+- **Context**: Built-in logging and progress reporting for each tool execution
+- **JSON**: Structured response format for all tool outputs
+
+## Configuration
+
+The server requires two parameters:
+- `--url`: The Nautobot API URL (e.g., https://nautobot.example.com)
+- `--token`: A valid Nautobot API token with appropriate permissions
+
+### Debug Mode
+
+Enable debug logging with the `--debug` flag:
+
+```bash
+python nautobot_mcp_server.py --url http://localhost:8080 --token your-token --debug
+```
+
+## Contributing
+
+To add new Nautobot resources or operations:
+
+1. Add new tool definitions in the `list_tools()` handler
+2. Implement the corresponding async methods (e.g., `_list_resources`, `_get_resource`)
+3. Add the tool case to the `call_tool()` handler
+4. Update tests and documentation
+
+## License
+
+MIT

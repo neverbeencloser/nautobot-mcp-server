@@ -7,19 +7,19 @@ authors = [
 ]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.11,<3.13"
-dependencies = [
-    "mcp-server (>=0.1.4,<0.2.0)",
-    "pynautobot (>=2.0.0,<3.0.0)"
-]
 
 [tool.poetry]
 package-mode = false
 
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+mcp-server = ">=0.1.4,<0.2.0"
+pynautobot = "^2.2.1"
+
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.12.8"
 coverage = "^7.10.2"
-nautobot = "^2.4.8"
+nautobot = "2.4.10"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
@@ -31,7 +31,7 @@ all = [
 
 [tool.black]
 line-length = 120
-target-version = ['py310']
+target-version = ['py39']
 include = '\.pyi?$'
 exclude = '''
 (
@@ -94,7 +94,7 @@ supported_nautobot_versions = [
 
 [tool.ruff]
 line-length = 120
-target-version = "py38"
+target-version = "py39"
 
 [tool.ruff.lint]
 select = [

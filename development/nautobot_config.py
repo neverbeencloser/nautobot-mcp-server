@@ -105,7 +105,7 @@ INSTALLATION_METRICS_ENABLED = False
 
 # Enable installed plugins. Add the name of each plugin to the list.
 #
-PLUGINS = ["nautobot_cloud_models"]
+PLUGINS = []
 
 # Plugins configuration settings. These settings are used by various plugins that the user may have installed.
 # Each key in the dictionary is the name of an installed plugin and its value is a dictionary of settings.

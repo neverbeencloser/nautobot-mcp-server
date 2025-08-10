@@ -3,16 +3,17 @@
 # -------------------------------------------------------------------------------------------
 # Variables that are specific to each project.
 PROJECT      := nautobot-mcp-server
-REPO         := local
-REGISTRY     := nautobot
+REPO         := mcp
+REGISTRY     := local
 VERSION      := $(shell poetry version --short)
 NAUTOBOT_VER := $(shell grep '^nautobot = ' pyproject.toml | sed 's/nautobot = "\([^"]*\)"/\1/')
 COVERAGE_PCT := 40
 
-# These variables should be the same across all projects
-BAKE = VERSION=$(VERSION) NAUTOBOT_VER=$(NAUTOBOT_VER) docker buildx bake "--allow=fs.read=.." -f "docker-compose.yml"
-BASE = VERSION=$(VERSION) NAUTOBOT_VER=$(NAUTOBOT_VER) docker compose --project-name $(PROJECT) --project-directory "development" -f "development/docker-compose.yml"
-DOCS = VERSION=$(VERSION) NAUTOBOT_VER=$(NAUTOBOT_VER) docker compose --project-name $(PROJECT) --project-directory "development" -f "development/docker-compose.docs.yml"
+# These variables should be the same
+VARIABLES := VERSION=$(VERSION) NAUTOBOT_VER=$(NAUTOBOT_VER) REPO=$(REPO) REGISTRY=$(REGISTRY)
+BAKE = $(VARIABLES) docker buildx bake "--allow=fs.read=.." -f "docker-compose.yml"
+BASE = $(VARIABLES) docker compose --project-name $(PROJECT) --project-directory "development" -f "development/docker-compose.yml"
+DOCS = $(VARIABLES) docker compose --project-name $(PROJECT) --project-directory "development" -f "development/docker-compose.docs.yml"
 
 default: help
 
@@ -108,12 +109,12 @@ install: .env ## Install the Nautobot development environment.
 # DOCKER/BUILD: Building of containers and pushing to registries
 # -------------------------------------------------------------------------------------------
 build:  ## Builds a new development container. Does not use cached data.
-	@cd develop && $(BAKE) nautobot --no-cache
+	@cd development && $(BAKE) --no-cache nautobot
 .PHONY: build
 
 push:  ## Push the built image to the AWS ECR repository.
 	@echo "Pushing Nautobot image to AWS ECR..."
-	@cd develop && $(BAKE) --push nautobot
+	@cd development && $(BAKE) --push nautobot
 
 
 # -------------------------------------------------------------------------------------------

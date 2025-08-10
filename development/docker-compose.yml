@@ -1,14 +1,14 @@
 ---
 x-build: &build
-  image: "${DOCKER_REPO}/${DOCKER_REGISTRY}/nautobot-mcp-server:${VERSION:-1.0.0}"
+  image: "${REGISTRY}/${REPO}/nautobot-mcp-server:${VERSION:-1.0.0}"
   build:
     context: "../"
-    dockerfile: "develop/Dockerfile"
+    dockerfile: "development/Dockerfile"
     platforms:
       - "linux/amd64"
       - "linux/arm64"
     tags:
-      - "${DOCKER_REPO}/${DOCKER_REGISTRY}/nautobot-mcp-server:${VERSION:-1.0.0}"
+      - "${REGISTRY}/${REPO}/nautobot-mcp-server:${VERSION:-1.0.0}"
     args:
       NAUTOBOT_VER: "${NAUTOBOT_VER:-2.4.8}"
       PYTHON_VER: "${PYTHON_VER:-3.11}"

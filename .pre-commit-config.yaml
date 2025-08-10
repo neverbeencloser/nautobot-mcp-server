@@ -6,8 +6,8 @@
 repos:
   - repo: "local"
     hooks:
-      - id: "ruff lint"
-        name: "ruff lint"
-        entry: "poetry run invoke ruff"
+      - id: "run lint"
+        name: "run lint"
+        entry: "poetry run make lint"
         language: "system"
         pass_filenames: false
