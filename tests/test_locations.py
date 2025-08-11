@@ -72,19 +72,21 @@ class TestLocationTools(unittest.TestCase):
         assert parsed[0]["id"] == "location-123"
         assert parsed[1]["name"] == "test-location-2"
 
-        # Verify client was called correctly
-        self.mock_client.dcim.locations.filter.assert_called_once_with(limit=10)
+        # Verify client was called correctly with depth and offset parameters
+        self.mock_client.dcim.locations.filter.assert_called_once_with(depth=1, limit=10, offset=None)
         self.mock_context.info.assert_called()
 
     def test_list_locations_with_status_filter(self):
-        """Test location listing with status filter."""
+        """Test location listing with location_type filter."""
         self.mock_client.dcim.locations.filter.return_value = []
 
         list_locations_func = self._register_and_get_function(0)
-        result = list_locations_func(self.mock_context, limit=5, status="active")
+        result = list_locations_func(self.mock_context, limit=5, location_type="datacenter")
 
-        # Verify client was called with status filter
-        self.mock_client.dcim.locations.filter.assert_called_once_with(status="active", limit=5)
+        # Verify client was called with location_type filter and default parameters
+        self.mock_client.dcim.locations.filter.assert_called_once_with(
+            depth=1, limit=5, offset=None, location_type="datacenter"
+        )
 
         # Verify empty result
         parsed = json.loads(result)
@@ -112,12 +114,12 @@ class TestLocationTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert parsed["name"] == "test-location"
-        assert parsed["id"] == "location-123"
-        assert parsed["location_type"] == "Site"
+        assert parsed["data"]["name"] == "test-location"
+        assert parsed["data"]["id"] == "location-123"
+        assert parsed["data"]["location_type"] == "Site"
 
-        # Verify client was called correctly
-        self.mock_client.dcim.locations.get.assert_called_with(id="location-123")
+        # Verify client was called correctly with depth parameter
+        self.mock_client.dcim.locations.get.assert_called_with(id="location-123", depth=1)
 
     def test_get_location_not_found(self):
         """Test location not found scenario."""
@@ -194,7 +196,7 @@ class TestLocationTools(unittest.TestCase):
         assert "description" in parsed["data"]["updated_fields"]
 
         # Verify location was saved
-        assert hasattr(self.mock_location, "save")
+        assert hasattr(self.mock_location, "update")
 
     def test_delete_location_success(self):
         """Test successful location deletion."""

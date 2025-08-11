@@ -1,6 +1,6 @@
 """Device-related tools for Nautobot MCP Server."""
 
-from typing import Optional
+from typing import Any
 
 from mcp.server.fastmcp import Context, FastMCP
 from pynautobot import RequestError
@@ -19,29 +19,56 @@ class DeviceTools(NautobotToolBase):
         """
 
         @mcp.tool()
-        def nautobot_list_devices(ctx: Context, limit: int = 10, location: Optional[str] = None) -> str:
+        def nautobot_list_devices(
+            ctx: Context,
+            depth: int = 1,
+            limit: int = 50,
+            offset: int | None = None,
+            location: str | None = None,
+            role: str | None = None,
+            status: str | None = None,
+        ) -> str:
             """List all devices in Nautobot.
+
+            Note that this returns a limited number of device fields to help with potential token size limitations.
+            If token limit is reached, you can use limit and offset to paginate through results.
 
             Args:
                 ctx: MCP context for logging and progress
-                limit: Number of devices to return (default: 10)
-                location: Filter devices by location name (optional)
+                depth: Depth of the device details to return; default returns 1 level of nested objects.
+                limit: Number of devices per page; pynautobot will return all devices unless offset is used.
+                offset: Offset for pagination; if None, will return all devices.
+                location: Optional location filter to apply (name or UUID).
+                role: Optional device role filter to apply (name or UUID).
+                status: Optional device status filter to apply (name or UUID).
 
             Returns:
                 JSON string of device list
             """
-            ctx.info(f"Listing devices (limit={limit}, location={location})")
+            ctx.info(
+                f"Listing devices (depth={depth}, limit={limit}, "
+                "offset={offset}, location={location}, role={role}, status={status})"
+            )
 
             try:
                 client = self._get_client()
                 devices = client.dcim.devices
 
+                kwargs: dict[str, Any] = {
+                    "depth": depth,
+                    "limit": limit,
+                    "offset": offset,
+                }
                 if location:
-                    ctx.debug(f"Filtering by location: {location}")
-                    device_list = devices.filter(location=location, limit=limit)
-                else:
-                    device_list = devices.filter(limit=limit)
+                    kwargs["location"] = location
+                if role:
+                    kwargs["role"] = role
+                if status:
+                    kwargs["status"] = status
 
+                device_list = devices.filter(**kwargs)
+
+                # Build abbreviated list to help with potential token size limitations
                 result = []
                 for device in device_list:
                     device_info = {
@@ -67,12 +94,13 @@ class DeviceTools(NautobotToolBase):
                 return self.log_and_return_error(ctx, "listing devices", e)
 
         @mcp.tool()
-        def nautobot_get_device(ctx: Context, device_id: str) -> str:
+        def nautobot_get_device(ctx: Context, device_id: str, depth: int = 1) -> str:
             """Get a specific device by ID or name.
 
             Args:
                 ctx: MCP context for logging and progress
                 device_id: Device ID (UUID) or name
+                depth: Depth of the device details to return; default returns 1 level of nested objects.
 
             Returns:
                 JSON string of device details
@@ -85,31 +113,16 @@ class DeviceTools(NautobotToolBase):
 
                 # Try to get by ID first (UUID)
                 try:
-                    device = devices.get(id=device_id)
+                    device = devices.get(id=device_id, depth=depth)
                     ctx.debug(f"Found device by ID: {device_id}")
                 except RequestError:
                     # If not found by ID, try by name
                     ctx.debug(f"Searching device by name: {device_id}")
-                    device = devices.get(name=device_id)
+                    device = devices.get(name=device_id, depth=depth)
 
                 if device:
-                    device_info = {
-                        "id": str(device.id),
-                        "name": device.name,
-                        "device_type": str(device.device_type) if device.device_type else None,
-                        "role": str(device.role) if device.role else None,
-                        "location": str(device.location) if device.location else None,
-                        "status": str(device.status) if device.status else None,
-                        "platform": str(device.platform) if device.platform else None,
-                        "serial": device.serial if device.serial else None,
-                        "asset_tag": device.asset_tag if device.asset_tag else None,
-                        "primary_ip4": str(device.primary_ip4) if device.primary_ip4 else None,
-                        "primary_ip6": str(device.primary_ip6) if device.primary_ip6 else None,
-                        "comments": device.comments if device.comments else None,
-                    }
-
                     ctx.info(f"Successfully retrieved device: {device.name}")
-                    return self.format_success(device_info)
+                    return self.format_success(dict(device), message="Device retrieved successfully")
                 else:
                     ctx.warning(f"Device not found: {device_id}")
                     return self.format_error(f"Device not found: {device_id}")
@@ -119,17 +132,68 @@ class DeviceTools(NautobotToolBase):
 
         @mcp.tool()
         def nautobot_create_device(
-            ctx: Context, name: str, device_type: str, role: str, location: str, status: str = "active"
+            ctx: Context,
+            name: str,
+            device_type: str,
+            location: str,
+            role: str,
+            status: str,
+            asset_tag: str | None = None,
+            cluster: str | None = None,
+            comments: str | None = None,
+            custom_fields: dict[str, str] | None = None,
+            device_redundancy_group: str | None = None,
+            device_redundancy_group_priority: int | None = None,
+            face: str | None = None,
+            parent_bay: str | None = None,
+            platform: str | None = None,
+            position: int | None = None,
+            primary_ip4: str | None = None,
+            primary_ip6: str | None = None,
+            rack: str | None = None,
+            relationships: dict | None = None,
+            serial: str | None = None,
+            secrets_group: str | None = None,
+            software_image_files: list[str] | None = None,
+            software_version: str | None = None,
+            tags: list[str] | None = None,
+            tenant: str | None = None,
+            vc_position: int | None = None,
+            vc_priority: int | None = None,
+            virtual_chassis: str | None = None,
         ) -> str:
             """Create a new device in Nautobot.
 
             Args:
                 ctx: MCP context for logging and progress
-                name: Device name
-                device_type: Device type name
-                role: Device role name
-                location: Location name
-                status: Device status (default: "active")
+                name: Device name or UUID
+                device_type: Device type name or UUID
+                location: Location name or UUID
+                role: Device role name or UUID
+                status: Device status name or UUID
+                asset_tag: Optional asset tag
+                cluster: Optional cluster name or UUID
+                comments: Optional comments
+                custom_fields: Optional custom fields as a dictionary
+                device_redundancy_group: Optional redundancy group name or UUID
+                device_redundancy_group_priority: Optional redundancy group priority
+                face: Optional device face (front, rear)
+                parent_bay: Optional parent bay name or UUID
+                platform: Optional platform name or UUID
+                position: Optional position in rack
+                primary_ip4: Optional primary IPv4 address
+                primary_ip6: Optional primary IPv6 address
+                rack: Optional rack name or UUID
+                relationships: Optional relationships as a dictionary
+                serial: Optional device serial number
+                secrets_group: Optional secrets group name or UUID
+                software_image_files: Optional list of software image file names or UUIDs
+                software_version: Optional software version name or UUID
+                tags: Optional list of tag names or UUIDs
+                tenant: Optional tenant name or UUID
+                vc_position: Optional virtual chassis position
+                vc_priority: Optional virtual chassis priority
+                virtual_chassis: Optional virtual chassis name or UUID
 
             Returns:
                 JSON string of created device details
@@ -137,44 +201,28 @@ class DeviceTools(NautobotToolBase):
             ctx.info(f"Creating device: {name}")
 
             try:
+                # Capture function parameters before defining other locals
+                params = locals().copy()
+                params.pop("ctx")
+                params.pop("self")
+
                 client = self._get_client()
 
-                # Get the related objects first
-                ctx.debug(f"Looking up device type: {device_type}")
-                device_type_obj = client.dcim.device_types.get(model=device_type)
-                if not device_type_obj:
-                    ctx.error(f"Device type not found: {device_type}")
-                    return self.format_error(f"Device type not found: {device_type}")
+                if not name:
+                    return self.format_error("Device name is required")
+                if not location:
+                    return self.format_error("Device location is required")
+                if not role:
+                    return self.format_error("Device role is required")
+                if not status:
+                    return self.format_error("Device status is required")
 
-                ctx.debug(f"Looking up role: {role}")
-                role_obj = client.extras.roles.get(name=role)
-                if not role_obj:
-                    ctx.error(f"Role not found: {role}")
-                    return self.format_error(f"Role not found: {role}")
+                # Build device payload from non-None parameters
+                device_payload = {k: v for k, v in params.items() if v is not None}
+                ctx.info(f"Creating device: {device_payload['name']}")
 
-                ctx.debug(f"Looking up location: {location}")
-                location_obj = client.dcim.locations.get(name=location)
-                if not location_obj:
-                    ctx.error(f"Location not found: {location}")
-                    return self.format_error(f"Location not found: {location}")
-
-                ctx.debug(f"Looking up status: {status}")
-                status_obj = client.extras.statuses.get(name=status)
-                if not status_obj:
-                    ctx.error(f"Status not found: {status}")
-                    return self.format_error(f"Status not found: {status}")
-
-                # Create the device
-                device_data = {
-                    "name": name,
-                    "device_type": device_type_obj.id,
-                    "role": role_obj.id,
-                    "location": location_obj.id,
-                    "status": status_obj.id,
-                }
-
-                ctx.info(f"Creating device with data: {device_data}")
-                new_device = client.dcim.devices.create(**device_data)
+                ctx.info(f"Creating device with data: {device_payload}")
+                new_device = client.dcim.devices.create(**device_payload)
 
                 device_info = {
                     "id": str(new_device.id),
@@ -194,13 +242,71 @@ class DeviceTools(NautobotToolBase):
                 return self.log_and_return_error(ctx, "creating device", e)
 
         @mcp.tool()
-        def nautobot_update_device(ctx: Context, device_id: str, **kwargs) -> str:
+        def nautobot_update_device(
+            ctx: Context,
+            device_id: str,
+            name: str | None = None,
+            device_type: str | None = None,
+            location: str | None = None,
+            role: str | None = None,
+            status: str | None = None,
+            asset_tag: str | None = None,
+            cluster: str | None = None,
+            comments: str | None = None,
+            custom_fields: dict[str, str] | None = None,
+            device_redundancy_group: str | None = None,
+            device_redundancy_group_priority: int | None = None,
+            face: str | None = None,
+            parent_bay: str | None = None,
+            platform: str | None = None,
+            position: int | None = None,
+            primary_ip4: str | None = None,
+            primary_ip6: str | None = None,
+            rack: str | None = None,
+            relationships: dict | None = None,
+            serial: str | None = None,
+            secrets_group: str | None = None,
+            software_image_files: list[str] | None = None,
+            software_version: str | None = None,
+            tags: list[str] | None = None,
+            tenant: str | None = None,
+            vc_position: int | None = None,
+            vc_priority: int | None = None,
+            virtual_chassis: str | None = None,
+        ) -> str:
             """Update an existing device in Nautobot.
 
             Args:
                 ctx: MCP context for logging and progress
-                device_id: Device ID (UUID) or name
-                **kwargs: Fields to update (e.g., status, role, location, comments)
+                device_id: Device ID (UUID)
+                name: Device name (optional)
+                device_type: Device type name or UUID (optional)
+                location: Location name or UUID (optional)
+                role: Device role name or UUID (optional)
+                status: Device status name or UUID (optional)
+                asset_tag: Asset tag (optional)
+                cluster: Cluster name or UUID (optional)
+                comments: Comments (optional)
+                custom_fields: Custom fields as a dictionary (optional)
+                device_redundancy_group: Redundancy group name or UUID (optional)
+                device_redundancy_group_priority: Redundancy group priority (optional)
+                face: Device face (front, rear) (optional)
+                parent_bay: Parent bay name or UUID (optional)
+                platform: Platform name or UUID (optional)
+                position: Position in rack (optional)
+                primary_ip4: Primary IPv4 address (optional)
+                primary_ip6: Primary IPv6 address (optional)
+                rack: Rack name or UUID (optional)
+                relationships: Relationships as a dictionary (optional)
+                serial: Device serial number (optional)
+                secrets_group: Secrets group name or UUID (optional)
+                software_image_files: List of software image file names or UUIDs (optional)
+                software_version: Software version name or UUID (optional)
+                tags: List of tag names or UUIDs (optional)
+                tenant: Tenant name or UUID (optional)
+                vc_position: Virtual chassis position (optional)
+                vc_priority: Virtual chassis priority (optional)
+                virtual_chassis: Virtual chassis name or UUID (optional)
 
             Returns:
                 JSON string of updated device details
@@ -208,64 +314,40 @@ class DeviceTools(NautobotToolBase):
             ctx.info(f"Updating device: {device_id}")
 
             try:
+                # Capture function parameters before defining other locals
+                params = locals().copy()
+                params.pop("ctx")
+                params.pop("device_id")
+                params.pop("self")
+
                 client = self._get_client()
                 devices = client.dcim.devices
 
                 # Get the device
                 try:
-                    device = devices.get(device_id)
+                    device = devices.get(id=device_id)
                     ctx.debug(f"Found device by ID: {device_id}")
                 except Exception:
-                    ctx.debug(f"Searching device by name: {device_id}")
-                    device = devices.get(name=device_id)
-
-                if not device:
                     ctx.warning(f"Device not found: {device_id}")
                     return self.format_error(f"Device not found: {device_id}")
 
-                # Process update fields
-                update_data = {}
+                # Build update dict from non-None parameters
+                update_data = {k: v for k, v in params.items() if v is not None}
 
-                # Handle special fields that need object lookups
-                if "status" in kwargs:
-                    status_obj = client.extras.statuses.get(name=kwargs["status"])
-                    if status_obj:
-                        update_data["status"] = status_obj.id
-                    else:
-                        ctx.warning(f"Status not found: {kwargs['status']}")
-
-                if "role" in kwargs:
-                    role_obj = client.extras.roles.get(name=kwargs["role"])
-                    if role_obj:
-                        update_data["role"] = role_obj.id
-                    else:
-                        ctx.warning(f"Role not found: {kwargs['role']}")
-
-                if "location" in kwargs:
-                    location_obj = client.dcim.locations.get(name=kwargs["location"])
-                    if location_obj:
-                        update_data["location"] = location_obj.id
-                    else:
-                        ctx.warning(f"Location not found: {kwargs['location']}")
-
-                # Handle simple fields
-                simple_fields = ["comments", "serial", "asset_tag"]
-                for field in simple_fields:
-                    if field in kwargs:
-                        update_data[field] = kwargs[field]
+                # Normalize input
+                if "status" in update_data:
+                    update_data["status"] = update_data["status"].capitalize()
 
                 # Update the device
                 ctx.info(f"Updating device with data: {update_data}")
-                for key, value in update_data.items():
-                    setattr(device, key, value)
-                device.save()
+                device.update(update_data)
 
                 device_info = {
                     "id": str(device.id),
                     "name": device.name,
                     "device_type": str(device.device_type) if device.device_type else None,
                     "role": str(device.role) if device.role else None,
-                    "site": str(device.site) if device.site else None,
+                    "location": str(device.location) if device.location else None,
                     "status": str(device.status) if device.status else None,
                     "updated_fields": list(update_data.keys()),
                 }
@@ -282,7 +364,7 @@ class DeviceTools(NautobotToolBase):
 
             Args:
                 ctx: MCP context for logging and progress
-                device_id: Device ID (UUID) or name
+                device_id: Device ID (UUID)
 
             Returns:
                 JSON string confirming deletion
@@ -295,22 +377,18 @@ class DeviceTools(NautobotToolBase):
 
                 # Get the device
                 try:
-                    device = devices.get(device_id)
+                    device = devices.get(id=device_id)
                     ctx.debug(f"Found device by ID: {device_id}")
                 except Exception:
-                    ctx.debug(f"Searching device by name: {device_id}")
-                    device = devices.get(name=device_id)
-
-                if not device:
                     ctx.warning(f"Device not found: {device_id}")
                     return self.format_error(f"Device not found: {device_id}")
 
                 device_name = device.name
                 device.delete()
 
-                ctx.info(f"Successfully deleted device: {device_name}")
+                ctx.info(f"Successfully deleted device: {device_id}:{device_name}")
                 return self.format_success(
-                    {"deleted": device_name}, message=f"Device '{device_name}' deleted successfully"
+                    {"deleted": device_name}, message=f"Device '{device_id}:{device_name}' deleted successfully"
                 )
 
             except Exception as e:

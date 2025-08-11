@@ -2,7 +2,6 @@
 """Test client for Nautobot MCP Server."""
 
 import asyncio
-import json
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
@@ -16,10 +15,10 @@ async def test_nautobot_mcp():
         args=[
             "-m",
             "nautobot_mcp_server",
-            "--url",
-            "http://localhost:8080",  # Update with your Nautobot URL
-            "--token",
-            "your-api-token-here",  # Update with your API token
+            # "--url",
+            # "http://localhost:8080",  # Update with your Nautobot URL
+            # "--token",
+            # "your-api-token-here",  # Update with your API token
         ],
     )
 
@@ -35,7 +34,7 @@ async def test_nautobot_mcp():
             tools = await session.list_tools()
             print("Available tools:")
             for tool in tools:
-                print(f"  - {tool.name}: {tool.description}")
+                print(f"  - {repr(tool)}")
             print("=" * 50)
 
             # Test 1: List devices
@@ -43,12 +42,13 @@ async def test_nautobot_mcp():
             result = await session.call_tool("nautobot_list_devices", {"limit": 5})
             print("Response:")
             for content in result:
-                if hasattr(content, "text"):
-                    try:
-                        data = json.loads(content.text)
-                        print(json.dumps(data, indent=2))
-                    except json.JSONDecodeError:
-                        print(content.text)
+                # if hasattr(content, "text"):
+                #     try:
+                #         data = json.loads(content.text)
+                #         print(json.dumps(data, indent=2))
+                #     except json.JSONDecodeError:
+                #         print(content.text)
+                print(repr(content))
 
             # Test 2: Get a specific device (if you know an ID or name)
             # Uncomment and update with a real device ID/name to test

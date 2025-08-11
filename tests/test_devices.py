@@ -82,8 +82,8 @@ class TestDeviceTools(unittest.TestCase):
         self.assertEqual(parsed[0]["id"], "device-123")
         self.assertEqual(parsed[1]["name"], "test-device-2")
 
-        # Verify client was called correctly
-        self.mock_client.dcim.devices.filter.assert_called_once_with(limit=10)
+        # Verify client was called correctly with depth and offset parameters
+        self.mock_client.dcim.devices.filter.assert_called_once_with(depth=1, limit=10, offset=None)
         self.mock_context.info.assert_called()
 
     def test_list_devices_with_location_filter(self):
@@ -93,8 +93,8 @@ class TestDeviceTools(unittest.TestCase):
         list_devices_func = self._register_and_get_function(0)
         result = list_devices_func(self.mock_context, limit=5, location="DC-01")
 
-        # Verify client was called with location filter
-        self.mock_client.dcim.devices.filter.assert_called_once_with(location="DC-01", limit=5)
+        # Verify client was called with location filter and default parameters
+        self.mock_client.dcim.devices.filter.assert_called_once_with(depth=1, limit=5, offset=None, location="DC-01")
 
         # Verify empty result
         parsed = json.loads(result)
@@ -122,12 +122,14 @@ class TestDeviceTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert parsed["name"] == "test-device"
-        assert parsed["id"] == "device-123"
-        assert parsed["device_type"] == "Router"
+        assert parsed["success"] is True
+        assert parsed["message"] == "Device retrieved successfully"
+        assert parsed["data"]["name"] == "test-device"
+        assert parsed["data"]["id"] == "device-123"
+        assert parsed["data"]["device_type"] == "Router"
 
-        # Verify client was called correctly
-        self.mock_client.dcim.devices.get.assert_called_with(id="device-123")
+        # Verify client was called correctly with depth parameter
+        self.mock_client.dcim.devices.get.assert_called_with(id="device-123", depth=1)
 
     def test_get_device_by_name_fallback(self):
         """Test device retrieval by name when ID lookup fails."""
@@ -141,13 +143,15 @@ class TestDeviceTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert parsed["name"] == "test-device"
+        assert parsed["success"] is True
+        assert parsed["message"] == "Device retrieved successfully"
+        assert parsed["data"]["name"] == "test-device"
 
-        # Verify both calls were made
+        # Verify both calls were made with depth parameter
         calls = self.mock_client.dcim.devices.get.call_args_list
         assert len(calls) == 2
-        assert calls[0][1] == {"id": "test-device"}
-        assert calls[1][1] == {"name": "test-device"}
+        assert calls[0][1] == {"id": "test-device", "depth": 1}
+        assert calls[1][1] == {"name": "test-device", "depth": 1}
 
     def test_get_device_not_found(self):
         """Test device not found scenario."""
@@ -165,19 +169,6 @@ class TestDeviceTools(unittest.TestCase):
 
     def test_create_device_success(self):
         """Test successful device creation."""
-        # Mock related object lookups
-        mock_device_type = MockRecord(id="type-123")
-        self.mock_client.dcim.device_types.get.return_value = mock_device_type
-
-        mock_role = MockRecord(id="role-123")
-        self.mock_client.extras.roles.get.return_value = mock_role
-
-        mock_location = MockRecord(id="location-123")
-        self.mock_client.dcim.locations.get.return_value = mock_location
-
-        mock_status = MockRecord(id="status-123")
-        self.mock_client.extras.statuses.get.return_value = mock_status
-
         # Mock device creation
         self.mock_client.dcim.devices.create.return_value = self.mock_device
 
@@ -192,25 +183,33 @@ class TestDeviceTools(unittest.TestCase):
         assert parsed["data"]["name"] == "test-device"
         assert "created successfully" in parsed["message"]
 
-        # Verify all lookups were performed
-        self.mock_client.dcim.device_types.get.assert_called_once_with(model="Router")
-        self.mock_client.extras.roles.get.assert_called_once_with(name="Core")
-        self.mock_client.dcim.locations.get.assert_called_once_with(name="DC-01")
-        self.mock_client.extras.statuses.get.assert_called_once_with(name="active")
+        # Verify device creation was called with correct parameters
+        self.mock_client.dcim.devices.create.assert_called_once_with(
+            name="new-device", device_type="Router", role="Core", location="DC-01", status="active"
+        )
 
     def test_create_device_missing_device_type(self):
-        """Test device creation with missing device type."""
-        self.mock_client.dcim.device_types.get.return_value = None
+        """Test device creation with invalid device type."""
+        # Mock device creation failure due to invalid device type
+        from pynautobot import RequestError
+
+        mock_request = MagicMock()
+        mock_request.status_code = 400
+        self.mock_client.dcim.devices.create.side_effect = RequestError(mock_request)
 
         create_device_func = self._register_and_get_function(2)
         result = create_device_func(
-            self.mock_context, name="new-device", device_type="NonexistentType", role="Core", location="DC-01"
+            self.mock_context,
+            name="new-device",
+            device_type="NonexistentType",
+            role="Core",
+            location="DC-01",
+            status="active",
         )
 
         # Verify error response
         parsed = json.loads(result)
         assert "error" in parsed
-        assert "Device type not found" in parsed["error"]
 
     def test_update_device_success(self):
         """Test successful device update."""
@@ -233,7 +232,7 @@ class TestDeviceTools(unittest.TestCase):
         assert "comments" in parsed["data"]["updated_fields"]
 
         # Verify device was saved
-        assert hasattr(self.mock_device, "save")
+        assert hasattr(self.mock_device, "update")
 
     def test_delete_device_success(self):
         """Test successful device deletion."""
