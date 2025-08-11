@@ -5,6 +5,7 @@ from typing import Optional
 import pynautobot
 from mcp.server.fastmcp import FastMCP
 
+from .resources import register_all_resources
 from .tools import register_all_tools
 
 
@@ -25,6 +26,9 @@ class NautobotMCPServer:
 
         # Register all tools from the tools submodule
         register_all_tools(self.mcp, self._get_client)
+
+        # Register all resources from the resources submodule
+        register_all_resources(self.mcp)
 
     def _get_client(self) -> pynautobot.api:
         """Get or create Nautobot client."""

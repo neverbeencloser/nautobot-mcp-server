@@ -1,8 +1,9 @@
 """Location-related tools for Nautobot MCP Server."""
 
-from typing import Optional
+from typing import Any, Optional
 
 from mcp.server.fastmcp import Context, FastMCP
+from pynautobot import RequestError
 
 from .base import NautobotToolBase
 
@@ -236,55 +237,24 @@ class LocationTools(NautobotToolBase):
         def nautobot_update_location(
             ctx: Context,
             location_id: str,
-            name: str | None = None,
-            location_type: str | None = None,
-            status: str | None = None,
-            parent: Optional[str] = None,
-            description: Optional[str] = None,
-            facility: Optional[str] = None,
-            asn: Optional[int] = None,
-            time_zone: Optional[str] = None,
-            physical_address: Optional[str] = None,
-            shipping_address: Optional[str] = None,
-            latitude: Optional[str] = None,
-            longitude: Optional[str] = None,
-            contact_name: Optional[str] = None,
-            contact_phone: Optional[str] = None,
-            contact_email: Optional[str] = None,
+            updates: dict[str, Any],
         ) -> str:
-            """Update an existing location in Nautobot.
+            """
+            Update location fields for an existing location.
+
+            Use 'schema://location/fields' MCP Resource to get available fields.
 
             Args:
                 ctx: MCP context for logging and progress
-                location_id: Location ID (UUID)
-                name: Location name (Optional)
-                location_type: Location type name or ID (Optional)
-                status: Location status (Optional)
-                parent: Parent location name or ID (optional)
-                description: Location description (optional)
-                facility: Facility identifier (optional)
-                asn: Autonomous System Number (optional)
-                time_zone: Time zone (optional)
-                physical_address: Physical address (optional)
-                shipping_address: Shipping address (optional)
-                latitude: Latitude coordinate (optional)
-                longitude: Longitude coordinate (optional)
-                contact_name: Contact name (optional)
-                contact_phone: Contact phone (optional)
-                contact_email: Contact email (optional)
+                location_id: Location ID (UUID); must GET location first if you don't know the ID.
+                updates: Field updates dict. Set None to clear fields.
 
             Returns:
-                JSON string of updated location details
+                JSON string of updated location details or error message
             """
             ctx.info(f"Updating location: {location_id}")
 
             try:
-                # Capture function parameters before defining other locals
-                params = locals().copy()
-                params.pop("ctx")
-                params.pop("location_id")
-                params.pop("self")
-
                 client = self._get_client()
                 locations = client.dcim.locations
 
@@ -292,27 +262,37 @@ class LocationTools(NautobotToolBase):
                 try:
                     location = locations.get(id=location_id)
                     ctx.debug(f"Found location by ID: {location_id}")
-                except Exception:
+                except RequestError:
                     ctx.warning(f"Location not found: {location_id}")
                     return self.format_error(f"Location not found: {location_id}")
 
-                # Build update dict from non-None parameters
-                update_data = {k: v for k, v in params.items() if v is not None}
+                # Validate that updates is a dictionary
+                if not isinstance(updates, dict):
+                    return self.format_error("Updates parameter must be a dictionary")
 
-                # Normalize input
-                if "status" in update_data:
-                    update_data["status"] = update_data["status"].capitalize()
+                # Log fields being updated, including None values
+                fields_to_update = list(updates.keys())
+                fields_to_clear = [k for k, v in updates.items() if v is None]
 
-                # Update the location
-                ctx.info(f"Updating location with data: {update_data}")
-                location.update(update_data)
+                if fields_to_clear:
+                    ctx.info(f"Clearing fields: {fields_to_clear}")
+
+                ctx.info(f"Updating fields: {fields_to_update}")
+
+                # Normalize status field if present
+                if "status" in updates and updates["status"] is not None:
+                    updates["status"] = updates["status"].capitalize()
+
+                ctx.info(f"Updating location with data: {updates}")
+                location.update(updates)
 
                 location_info = {
                     "id": str(location.id),
                     "name": location.name,
                     "natural_slug": location.natural_slug if hasattr(location, "natural_slug") else None,
                     "status": str(location.status),
-                    "updated_fields": list(update_data.keys()),
+                    "updated_fields": fields_to_update,
+                    "cleared_fields": fields_to_clear,
                 }
 
                 ctx.info(f"Successfully updated location: {location.name}")

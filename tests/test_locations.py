@@ -177,15 +177,27 @@ class TestLocationTools(unittest.TestCase):
 
     def test_update_location_success(self):
         """Test successful location update."""
-        self.mock_client.dcim.locations.get.return_value = self.mock_location
+        # Create a mock location with a mocked update method
+        from unittest.mock import MagicMock
 
-        # Mock status lookup for update
-        mock_status = MockRecord(id="status-456")
-        self.mock_client.extras.statuses.get.return_value = mock_status
+        mock_location = MockRecord(
+            id="location-123",
+            name="test-location",
+            location_type="Site",
+            status="active",
+            natural_slug="test-location",
+            url="http://nautobot/locations/location-123",
+        )
+        # Replace update method with a MagicMock to track calls
+        mock_location.update = MagicMock(side_effect=mock_location.update)
+
+        self.mock_client.dcim.locations.get.return_value = mock_location
 
         update_location_func = self._register_and_get_function(3)
         result = update_location_func(
-            self.mock_context, location_id="location-123", status="maintenance", description="Updated description"
+            self.mock_context,
+            location_id="location-123",
+            updates={"status": "maintenance", "description": "Updated description"},
         )
 
         # Verify result
@@ -196,7 +208,66 @@ class TestLocationTools(unittest.TestCase):
         self.assertIn("description", parsed["data"]["updated_fields"])
 
         # Verify location was saved
-        self.assertTrue(hasattr(self.mock_location, "update"))
+        self.assertTrue(hasattr(mock_location, "update"))
+
+    def test_update_location_with_none_values(self):
+        """Test location update with None values to clear fields."""
+        # Create a mock location with a mocked update method
+        from unittest.mock import MagicMock
+
+        mock_location = MockRecord(
+            id="location-123",
+            name="test-location",
+            location_type="Site",
+            status="active",
+            natural_slug="test-location",
+            url="http://nautobot/locations/location-123",
+        )
+        # Replace update method with a MagicMock to track calls
+        mock_location.update = MagicMock(side_effect=mock_location.update)
+
+        self.mock_client.dcim.locations.get.return_value = mock_location
+
+        update_location_func = self._register_and_get_function(3)
+        result = update_location_func(
+            self.mock_context,
+            location_id="location-123",
+            updates={"facility": None, "contact_phone": None, "description": "Cleared some fields"},
+        )
+
+        # Verify result
+        parsed = json.loads(result)
+        self.assertTrue(parsed["success"])
+        self.assertEqual(parsed["data"]["name"], "test-location")
+        self.assertIn("facility", parsed["data"]["updated_fields"])
+        self.assertIn("contact_phone", parsed["data"]["updated_fields"])
+        self.assertIn("description", parsed["data"]["updated_fields"])
+        self.assertIn("facility", parsed["data"]["cleared_fields"])
+        self.assertIn("contact_phone", parsed["data"]["cleared_fields"])
+        self.assertNotIn("description", parsed["data"]["cleared_fields"])
+
+        # Verify update was called with None values
+        mock_location.update.assert_called_once()
+        update_args = mock_location.update.call_args[0][0]
+        self.assertIsNone(update_args["facility"])
+        self.assertIsNone(update_args["contact_phone"])
+        self.assertEqual(update_args["description"], "Cleared some fields")
+
+    def test_update_location_invalid_updates_parameter(self):
+        """Test location update with invalid updates parameter."""
+        self.mock_client.dcim.locations.get.return_value = self.mock_location
+
+        update_location_func = self._register_and_get_function(3)
+        result = update_location_func(
+            self.mock_context,
+            location_id="location-123",
+            updates="not a dictionary",  # Invalid parameter type
+        )
+
+        # Verify error response
+        parsed = json.loads(result)
+        self.assertIn("error", parsed)
+        self.assertIn("dictionary", parsed["error"])
 
     def test_delete_location_success(self):
         """Test successful location deletion."""

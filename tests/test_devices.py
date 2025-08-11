@@ -221,7 +221,9 @@ class TestDeviceTools(unittest.TestCase):
 
         update_device_func = self._register_and_get_function(3)
         result = update_device_func(
-            self.mock_context, device_id="device-123", status="maintenance", comments="Under maintenance"
+            self.mock_context,
+            device_id="device-123",
+            updates={"status": "maintenance", "comments": "Under maintenance"},
         )
 
         # Verify result
@@ -233,6 +235,66 @@ class TestDeviceTools(unittest.TestCase):
 
         # Verify device was saved
         self.assertTrue(hasattr(self.mock_device, "update"))
+
+    def test_update_device_with_none_values(self):
+        """Test device update with None values to clear fields."""
+        # Create a mock device with a mocked update method
+        from unittest.mock import MagicMock
+
+        mock_device = MockRecord(
+            id="device-123",
+            name="test-device",
+            device_type="test-type",
+            role="test-role",
+            location="test-location",
+            status="active",
+            url="http://nautobot/devices/device-123",
+        )
+        # Replace update method with a MagicMock to track calls
+        mock_device.update = MagicMock(side_effect=mock_device.update)
+
+        self.mock_client.dcim.devices.get.return_value = mock_device
+
+        update_device_func = self._register_and_get_function(3)
+        result = update_device_func(
+            self.mock_context,
+            device_id="device-123",
+            updates={"asset_tag": None, "serial": None, "comments": "Cleared some fields"},
+        )
+
+        # Verify result
+        parsed = json.loads(result)
+        self.assertTrue(parsed["success"])
+        self.assertEqual(parsed["data"]["name"], "test-device")
+        self.assertIn("asset_tag", parsed["data"]["updated_fields"])
+        self.assertIn("serial", parsed["data"]["updated_fields"])
+        self.assertIn("comments", parsed["data"]["updated_fields"])
+        self.assertIn("asset_tag", parsed["data"]["cleared_fields"])
+        self.assertIn("serial", parsed["data"]["cleared_fields"])
+        self.assertNotIn("comments", parsed["data"]["cleared_fields"])
+
+        # Verify update was called with None values
+        mock_device.update.assert_called_once()
+        update_args = mock_device.update.call_args[0][0]
+        self.assertIsNone(update_args["asset_tag"])
+        self.assertIsNone(update_args["serial"])
+        self.assertEqual(update_args["comments"], "Cleared some fields")
+
+    def test_update_device_invalid_updates_parameter(self):
+        """Test device update with invalid updates parameter."""
+        self.mock_client.dcim.devices.get.return_value = self.mock_device
+
+        update_device_func = self._register_and_get_function(3)
+        result = update_device_func(
+            self.mock_context,
+            device_id="device-123",
+            updates="not a dictionary",  # Invalid parameter type
+        )
+
+        # Verify error response
+        parsed = json.loads(result)
+        self.assertIn("error", parsed)
+        self.assertIn("dictionary", parsed["error"])
 
     def test_delete_device_success(self):
         """Test successful device deletion."""

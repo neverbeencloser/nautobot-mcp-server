@@ -47,9 +47,10 @@ export NAUTOBOT_TOKEN=your-api-token
 
 ### Available Tools
 
-The MCP server currently supports CRUD and get/list operations for:
- - Devices
- - Locations
+The MCP server currently supports
+ - `GraphQL` queries
+ - `dcim.devices` CRUD ops
+ - `dcim.locations` CRUD ops
 
 It also supports the following operations for Nautobot Jobs:
  - `get_job`
