@@ -67,10 +67,10 @@ class TestLocationTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert len(parsed) == 2
-        assert parsed[0]["name"] == "test-location"
-        assert parsed[0]["id"] == "location-123"
-        assert parsed[1]["name"] == "test-location-2"
+        self.assertEqual(len(parsed), 2)
+        self.assertEqual(parsed[0]["name"], "test-location")
+        self.assertEqual(parsed[0]["id"], "location-123")
+        self.assertEqual(parsed[1]["name"], "test-location-2")
 
         # Verify client was called correctly with depth and offset parameters
         self.mock_client.dcim.locations.filter.assert_called_once_with(depth=1, limit=10, offset=None)
@@ -90,7 +90,7 @@ class TestLocationTools(unittest.TestCase):
 
         # Verify empty result
         parsed = json.loads(result)
-        assert parsed == []
+        self.assertEqual(parsed, [])
 
     def test_list_locations_exception(self):
         """Test location listing with exception."""
@@ -101,8 +101,8 @@ class TestLocationTools(unittest.TestCase):
 
         # Verify error response
         parsed = json.loads(result)
-        assert "error" in parsed
-        assert "API Error" in parsed["error"]
+        self.assertIn("error", parsed)
+        self.assertIn("API Error", parsed["error"])
         self.mock_context.error.assert_called_once()
 
     def test_get_location_success(self):
@@ -114,9 +114,9 @@ class TestLocationTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert parsed["data"]["name"] == "test-location"
-        assert parsed["data"]["id"] == "location-123"
-        assert parsed["data"]["location_type"] == "Site"
+        self.assertEqual(parsed["data"]["name"], "test-location")
+        self.assertEqual(parsed["data"]["id"], "location-123")
+        self.assertEqual(parsed["data"]["location_type"], "Site")
 
         # Verify client was called correctly with depth parameter
         self.mock_client.dcim.locations.get.assert_called_with(id="location-123", depth=1)
@@ -132,8 +132,8 @@ class TestLocationTools(unittest.TestCase):
 
         # Verify error response
         parsed = json.loads(result)
-        assert "error" in parsed
-        assert "Location not found" in parsed["error"]
+        self.assertIn("error", parsed)
+        self.assertIn("Location not found", parsed["error"])
 
     def test_create_location_success(self):
         """Test successful location creation."""
@@ -152,15 +152,15 @@ class TestLocationTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert parsed["success"] is True
-        assert parsed["data"]["name"] == "test-location"
-        assert "created successfully" in parsed["message"]
+        self.assertTrue(parsed["success"])
+        self.assertEqual(parsed["data"]["name"], "test-location")
+        self.assertIn("created successfully", parsed["message"])
 
         # Verify lookups were performed - first ID, then name
         calls = self.mock_client.dcim.location_types.get.call_args_list
-        assert len(calls) == 2
-        assert calls[0][1] == {"id": "Site"}
-        assert calls[1][1] == {"name": "Site"}
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[0][1], {"id": "Site"})
+        self.assertEqual(calls[1][1], {"name": "Site"})
         self.mock_client.extras.statuses.get.assert_called_once_with(name="active")
 
     def test_create_location_missing_location_type(self):
@@ -172,8 +172,8 @@ class TestLocationTools(unittest.TestCase):
 
         # Verify error response
         parsed = json.loads(result)
-        assert "error" in parsed
-        assert "Location type not found" in parsed["error"]
+        self.assertIn("error", parsed)
+        self.assertIn("Location type not found", parsed["error"])
 
     def test_update_location_success(self):
         """Test successful location update."""
@@ -190,13 +190,13 @@ class TestLocationTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert parsed["success"] is True
-        assert parsed["data"]["name"] == "test-location"
-        assert "status" in parsed["data"]["updated_fields"]
-        assert "description" in parsed["data"]["updated_fields"]
+        self.assertTrue(parsed["success"])
+        self.assertEqual(parsed["data"]["name"], "test-location")
+        self.assertIn("status", parsed["data"]["updated_fields"])
+        self.assertIn("description", parsed["data"]["updated_fields"])
 
         # Verify location was saved
-        assert hasattr(self.mock_location, "update")
+        self.assertTrue(hasattr(self.mock_location, "update"))
 
     def test_delete_location_success(self):
         """Test successful location deletion."""
@@ -207,9 +207,9 @@ class TestLocationTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert parsed["success"] is True
-        assert parsed["data"]["deleted"] == "test-location"
-        assert "deleted successfully" in parsed["message"]
+        self.assertTrue(parsed["success"])
+        self.assertEqual(parsed["data"]["deleted"], "test-location")
+        self.assertIn("deleted successfully", parsed["message"])
 
     def test_delete_location_not_found(self):
         """Test location deletion when location not found."""
@@ -222,5 +222,5 @@ class TestLocationTools(unittest.TestCase):
 
         # Verify error response
         parsed = json.loads(result)
-        assert "error" in parsed
-        assert "Location not found" in parsed["error"]
+        self.assertIn("error", parsed)
+        self.assertIn("Location not found", parsed["error"])
