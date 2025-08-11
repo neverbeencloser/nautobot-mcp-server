@@ -162,42 +162,7 @@ class DeviceTools(NautobotToolBase):
             vc_priority: int | None = None,
             virtual_chassis: str | None = None,
         ) -> str:
-            """Create a new device in Nautobot.
-
-            Args:
-                ctx: MCP context for logging and progress
-                name: Device name or UUID
-                device_type: Device type name or UUID
-                location: Location name or UUID
-                role: Device role name or UUID
-                status: Device status name or UUID
-                asset_tag: Optional asset tag
-                cluster: Optional cluster name or UUID
-                comments: Optional comments
-                custom_fields: Optional custom fields as a dictionary
-                device_redundancy_group: Optional redundancy group name or UUID
-                device_redundancy_group_priority: Optional redundancy group priority
-                face: Optional device face (front, rear)
-                parent_bay: Optional parent bay name or UUID
-                platform: Optional platform name or UUID
-                position: Optional position in rack
-                primary_ip4: Optional primary IPv4 address
-                primary_ip6: Optional primary IPv6 address
-                rack: Optional rack name or UUID
-                relationships: Optional relationships as a dictionary
-                serial: Optional device serial number
-                secrets_group: Optional secrets group name or UUID
-                software_image_files: Optional list of software image file names or UUIDs
-                software_version: Optional software version name or UUID
-                tags: Optional list of tag names or UUIDs
-                tenant: Optional tenant name or UUID
-                vc_position: Optional virtual chassis position
-                vc_priority: Optional virtual chassis priority
-                virtual_chassis: Optional virtual chassis name or UUID
-
-            Returns:
-                JSON string of created device details
-            """
+            """Create device. Required: name, device_type, location, role, status."""
             ctx.info(f"Creating device: {name}")
 
             try:
@@ -245,81 +210,24 @@ class DeviceTools(NautobotToolBase):
         def nautobot_update_device(
             ctx: Context,
             device_id: str,
-            name: str | None = None,
-            device_type: str | None = None,
-            location: str | None = None,
-            role: str | None = None,
-            status: str | None = None,
-            asset_tag: str | None = None,
-            cluster: str | None = None,
-            comments: str | None = None,
-            custom_fields: dict[str, str] | None = None,
-            device_redundancy_group: str | None = None,
-            device_redundancy_group_priority: int | None = None,
-            face: str | None = None,
-            parent_bay: str | None = None,
-            platform: str | None = None,
-            position: int | None = None,
-            primary_ip4: str | None = None,
-            primary_ip6: str | None = None,
-            rack: str | None = None,
-            relationships: dict | None = None,
-            serial: str | None = None,
-            secrets_group: str | None = None,
-            software_image_files: list[str] | None = None,
-            software_version: str | None = None,
-            tags: list[str] | None = None,
-            tenant: str | None = None,
-            vc_position: int | None = None,
-            vc_priority: int | None = None,
-            virtual_chassis: str | None = None,
+            updates: dict[str, Any],
         ) -> str:
-            """Update an existing device in Nautobot.
+            """
+            Update device fields for an existing device.
+
+            Use 'schema://device/fields' MCP Resource to get available fields.
 
             Args:
                 ctx: MCP context for logging and progress
-                device_id: Device ID (UUID)
-                name: Device name (optional)
-                device_type: Device type name or UUID (optional)
-                location: Location name or UUID (optional)
-                role: Device role name or UUID (optional)
-                status: Device status name or UUID (optional)
-                asset_tag: Asset tag (optional)
-                cluster: Cluster name or UUID (optional)
-                comments: Comments (optional)
-                custom_fields: Custom fields as a dictionary (optional)
-                device_redundancy_group: Redundancy group name or UUID (optional)
-                device_redundancy_group_priority: Redundancy group priority (optional)
-                face: Device face (front, rear) (optional)
-                parent_bay: Parent bay name or UUID (optional)
-                platform: Platform name or UUID (optional)
-                position: Position in rack (optional)
-                primary_ip4: Primary IPv4 address (optional)
-                primary_ip6: Primary IPv6 address (optional)
-                rack: Rack name or UUID (optional)
-                relationships: Relationships as a dictionary (optional)
-                serial: Device serial number (optional)
-                secrets_group: Secrets group name or UUID (optional)
-                software_image_files: List of software image file names or UUIDs (optional)
-                software_version: Software version name or UUID (optional)
-                tags: List of tag names or UUIDs (optional)
-                tenant: Tenant name or UUID (optional)
-                vc_position: Virtual chassis position (optional)
-                vc_priority: Virtual chassis priority (optional)
-                virtual_chassis: Virtual chassis name or UUID (optional)
+                device_id: Device ID (UUID); must GET device first if you don't know the ID.
+                updates: Field updates dict. Set None to clear fields.
 
             Returns:
-                JSON string of updated device details
+                JSON string of updated device details or error message
             """
             ctx.info(f"Updating device: {device_id}")
 
             try:
-                # Capture function parameters before defining other locals
-                params = locals().copy()
-                params.pop("ctx")
-                params.pop("device_id")
-                params.pop("self")
-
                 client = self._get_client()
                 devices = client.dcim.devices
 
@@ -327,20 +235,28 @@ class DeviceTools(NautobotToolBase):
                 try:
                     device = devices.get(id=device_id)
                     ctx.debug(f"Found device by ID: {device_id}")
-                except Exception:
+                except RequestError:
                     ctx.warning(f"Device not found: {device_id}")
                     return self.format_error(f"Device not found: {device_id}")
 
-                # Build update dict from non-None parameters
-                update_data = {k: v for k, v in params.items() if v is not None}
+                # Validate that updates is a dictionary
+                if not isinstance(updates, dict):
+                    return self.format_error("Updates parameter must be a dictionary")
 
-                # Normalize input
-                if "status" in update_data:
-                    update_data["status"] = update_data["status"].capitalize()
+                # Log fields being updated, including None values
+                fields_to_update = list(updates.keys())
+                fields_to_clear = [k for k, v in updates.items() if v is None]
 
-                # Update the device
-                ctx.info(f"Updating device with data: {update_data}")
-                device.update(update_data)
+                if fields_to_clear:
+                    ctx.info(f"Clearing fields: {fields_to_clear}")
+                ctx.info(f"Updating fields: {fields_to_update}")
+
+                # Normalize status field if present
+                if "status" in updates and updates["status"] is not None:
+                    updates["status"] = updates["status"].capitalize()
+
+                ctx.info(f"Updating device with data: {updates}")
+                device.update(updates)
 
                 device_info = {
                     "id": str(device.id),
@@ -349,7 +265,8 @@ class DeviceTools(NautobotToolBase):
                     "role": str(device.role) if device.role else None,
                     "location": str(device.location) if device.location else None,
                     "status": str(device.status) if device.status else None,
-                    "updated_fields": list(update_data.keys()),
+                    "updated_fields": fields_to_update,
+                    "cleared_fields": fields_to_clear,
                 }
 
                 ctx.info(f"Successfully updated device: {device.name}")

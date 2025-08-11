@@ -30,6 +30,13 @@ async def test_nautobot_mcp():
             print("MCP Server initialized successfully!")
             print("=" * 50)
 
+            # List available resources
+            resources = await session.list_resources()
+            print("Available resources:")
+            for resource in resources:
+                print(f"  - {repr(resource)}")
+            print("=" * 50)
+
             # List available tools
             tools = await session.list_tools()
             print("Available tools:")
@@ -79,6 +86,18 @@ async def test_nautobot_mcp():
             # for content in result:
             #     if hasattr(content, 'text'):
             #         print(content.text)
+
+            print("\nTest 2: Listing device resource")
+            result = await session.read_resource("schema://device/fields")
+            print("Response:")
+            for content in result:
+                # if hasattr(content, "text"):
+                #     try:
+                #         data = json.loads(content.text)
+                #         print(json.dumps(data, indent=2))
+                #     except json.JSONDecodeError:
+                #         print(content.text)
+                print(repr(content))
 
             print("\n" + "=" * 50)
             print("Test completed successfully!")
