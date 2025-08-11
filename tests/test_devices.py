@@ -122,11 +122,11 @@ class TestDeviceTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert parsed["success"] is True
-        assert parsed["message"] == "Device retrieved successfully"
-        assert parsed["data"]["name"] == "test-device"
-        assert parsed["data"]["id"] == "device-123"
-        assert parsed["data"]["device_type"] == "Router"
+        self.assertTrue(parsed["success"])
+        self.assertEqual(parsed["message"], "Device retrieved successfully")
+        self.assertEqual(parsed["data"]["name"], "test-device")
+        self.assertEqual(parsed["data"]["id"], "device-123")
+        self.assertEqual(parsed["data"]["device_type"], "Router")
 
         # Verify client was called correctly with depth parameter
         self.mock_client.dcim.devices.get.assert_called_with(id="device-123", depth=1)
@@ -143,15 +143,15 @@ class TestDeviceTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert parsed["success"] is True
-        assert parsed["message"] == "Device retrieved successfully"
-        assert parsed["data"]["name"] == "test-device"
+        self.assertTrue(parsed["success"])
+        self.assertEqual(parsed["message"], "Device retrieved successfully")
+        self.assertEqual(parsed["data"]["name"], "test-device")
 
         # Verify both calls were made with depth parameter
         calls = self.mock_client.dcim.devices.get.call_args_list
-        assert len(calls) == 2
-        assert calls[0][1] == {"id": "test-device", "depth": 1}
-        assert calls[1][1] == {"name": "test-device", "depth": 1}
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[0][1], {"id": "test-device", "depth": 1})
+        self.assertEqual(calls[1][1], {"name": "test-device", "depth": 1})
 
     def test_get_device_not_found(self):
         """Test device not found scenario."""
@@ -164,8 +164,8 @@ class TestDeviceTools(unittest.TestCase):
 
         # Verify error response
         parsed = json.loads(result)
-        assert "error" in parsed
-        assert "Device not found" in parsed["error"]
+        self.assertIn("error", parsed)
+        self.assertIn("Device not found", parsed["error"])
 
     def test_create_device_success(self):
         """Test successful device creation."""
@@ -179,9 +179,9 @@ class TestDeviceTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert parsed["success"] is True
-        assert parsed["data"]["name"] == "test-device"
-        assert "created successfully" in parsed["message"]
+        self.assertTrue(parsed["success"])
+        self.assertEqual(parsed["data"]["name"], "test-device")
+        self.assertIn("created successfully", parsed["message"])
 
         # Verify device creation was called with correct parameters
         self.mock_client.dcim.devices.create.assert_called_once_with(
@@ -209,7 +209,7 @@ class TestDeviceTools(unittest.TestCase):
 
         # Verify error response
         parsed = json.loads(result)
-        assert "error" in parsed
+        self.assertIn("error", parsed)
 
     def test_update_device_success(self):
         """Test successful device update."""
@@ -226,13 +226,13 @@ class TestDeviceTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert parsed["success"] is True
-        assert parsed["data"]["name"] == "test-device"
-        assert "status" in parsed["data"]["updated_fields"]
-        assert "comments" in parsed["data"]["updated_fields"]
+        self.assertTrue(parsed["success"])
+        self.assertEqual(parsed["data"]["name"], "test-device")
+        self.assertIn("status", parsed["data"]["updated_fields"])
+        self.assertIn("comments", parsed["data"]["updated_fields"])
 
         # Verify device was saved
-        assert hasattr(self.mock_device, "update")
+        self.assertTrue(hasattr(self.mock_device, "update"))
 
     def test_delete_device_success(self):
         """Test successful device deletion."""
@@ -243,9 +243,9 @@ class TestDeviceTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert parsed["success"] is True
-        assert parsed["data"]["deleted"] == "test-device"
-        assert "deleted successfully" in parsed["message"]
+        self.assertTrue(parsed["success"])
+        self.assertEqual(parsed["data"]["deleted"], "test-device")
+        self.assertIn("deleted successfully", parsed["message"])
 
     def test_delete_device_not_found(self):
         """Test device deletion when device not found."""
@@ -258,5 +258,5 @@ class TestDeviceTools(unittest.TestCase):
 
         # Verify error response
         parsed = json.loads(result)
-        assert "error" in parsed
-        assert "Device not found" in parsed["error"]
+        self.assertIn("error", parsed)
+        self.assertIn("Device not found", parsed["error"])

@@ -65,10 +65,10 @@ class TestJobTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert len(parsed) == 2
-        assert parsed[0]["name"] == "test-job"
-        assert parsed[0]["id"] == "job-123"
-        assert parsed[1]["name"] == "another-job"
+        self.assertEqual(len(parsed), 2)
+        self.assertEqual(parsed[0]["name"], "test-job")
+        self.assertEqual(parsed[0]["id"], "job-123")
+        self.assertEqual(parsed[1]["name"], "another-job")
 
         # Verify client was called correctly
         self.mock_client.extras.jobs.filter.assert_called_once_with(limit=20)
@@ -83,8 +83,8 @@ class TestJobTools(unittest.TestCase):
 
         # Verify error response
         parsed = json.loads(result)
-        assert "error" in parsed
-        assert "API Error" in parsed["error"]
+        self.assertIn("error", parsed)
+        self.assertIn("API Error", parsed["error"])
         self.mock_context.error.assert_called_once()
 
     def test_get_job_success(self):
@@ -96,9 +96,9 @@ class TestJobTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert parsed["name"] == "test-job"
-        assert parsed["id"] == "job-123"
-        assert parsed["slug"] == "test-job"
+        self.assertEqual(parsed["name"], "test-job")
+        self.assertEqual(parsed["id"], "job-123")
+        self.assertEqual(parsed["slug"], "test-job")
 
         # Verify client was called correctly
         self.mock_client.extras.jobs.get.assert_called_with("job-123")
@@ -113,8 +113,8 @@ class TestJobTools(unittest.TestCase):
 
         # Verify error response
         parsed = json.loads(result)
-        assert "error" in parsed
-        assert "Job not found" in parsed["error"]
+        self.assertIn("error", parsed)
+        self.assertIn("Job not found", parsed["error"])
 
     def test_run_job_success(self):
         """Test successful job execution."""
@@ -125,9 +125,9 @@ class TestJobTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert parsed["success"] is True
-        assert parsed["data"]["job_name"] == "test-job"
-        assert "started successfully" in parsed["message"]
+        self.assertTrue(parsed["success"])
+        self.assertEqual(parsed["data"]["job_name"], "test-job")
+        self.assertIn("started successfully", parsed["message"])
 
     def test_run_job_not_found(self):
         """Test running non-existent job."""
@@ -139,8 +139,8 @@ class TestJobTools(unittest.TestCase):
 
         # Verify error response
         parsed = json.loads(result)
-        assert "error" in parsed
-        assert "Job not found" in parsed["error"]
+        self.assertIn("error", parsed)
+        self.assertIn("Job not found", parsed["error"])
 
     def test_list_job_results_success(self):
         """Test successful job result listing."""
@@ -161,10 +161,10 @@ class TestJobTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert len(parsed) == 2
-        assert parsed[0]["name"] == "test-result"
-        assert parsed[0]["id"] == "result-123"
-        assert parsed[1]["name"] == "another-result"
+        self.assertEqual(len(parsed), 2)
+        self.assertEqual(parsed[0]["name"], "test-result")
+        self.assertEqual(parsed[0]["id"], "result-123")
+        self.assertEqual(parsed[1]["name"], "another-result")
 
         # Verify client was called correctly
         self.mock_client.extras.job_results.filter.assert_called_once_with(limit=10)
@@ -184,7 +184,7 @@ class TestJobTools(unittest.TestCase):
 
         # Verify empty result
         parsed = json.loads(result)
-        assert parsed == []
+        self.assertEqual(parsed, [])
 
     def test_get_job_result_success(self):
         """Test successful job result retrieval."""
@@ -195,9 +195,9 @@ class TestJobTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert parsed["name"] == "test-result"
-        assert parsed["id"] == "result-123"
-        assert parsed["status"] == "Success"
+        self.assertEqual(parsed["name"], "test-result")
+        self.assertEqual(parsed["id"], "result-123")
+        self.assertEqual(parsed["status"], "Success")
 
         # Verify client was called correctly
         self.mock_client.extras.job_results.get.assert_called_with(id="result-123")
@@ -214,7 +214,7 @@ class TestJobTools(unittest.TestCase):
 
         # Verify error response
         parsed = json.loads(result)
-        assert "error" in parsed
+        self.assertIn("error", parsed)
 
     def test_get_job_logs_success(self):
         """Test successful job log retrieval."""
@@ -225,9 +225,9 @@ class TestJobTools(unittest.TestCase):
 
         # Verify result
         parsed = json.loads(result)
-        assert parsed["success"] is True
-        assert parsed["data"]["job_result_id"] == "result-123"
-        assert parsed["data"]["logs"] == "Job execution log content"
+        self.assertTrue(parsed["success"])
+        self.assertEqual(parsed["data"]["job_result_id"], "result-123")
+        self.assertEqual(parsed["data"]["logs"], "Job execution log content")
 
         # Verify client was called correctly
         self.mock_client.extras.job_results.get.assert_called_with(id="result-123")
@@ -244,4 +244,4 @@ class TestJobTools(unittest.TestCase):
 
         # Verify error response
         parsed = json.loads(result)
-        assert "error" in parsed
+        self.assertIn("error", parsed)
