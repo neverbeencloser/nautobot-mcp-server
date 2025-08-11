@@ -25,14 +25,14 @@ class TestDeviceTools(unittest.TestCase):
         # Create device tools instance
         self.device_tools = DeviceTools(lambda: self.mock_client)
 
-        # Create simple mock device
+        # Create simple mock device with JSON-serializable fields
         self.mock_device = MockRecord(
             id="device-123",
             name="test-device",
-            device_type=MagicMock(__str__=lambda self: "Router"),
-            role=MagicMock(__str__=lambda self: "Core"),
-            location=MagicMock(__str__=lambda self: "DC-01"),
-            status=MagicMock(__str__=lambda self: "Active"),
+            device_type="Router",
+            role="Core",
+            location="DC-01",
+            status="Active",
             platform=None,
             serial="SN12345",
             asset_tag=None,
@@ -40,7 +40,7 @@ class TestDeviceTools(unittest.TestCase):
             primary_ip6=None,
             comments=None,
             created="2024-01-01T00:00:00Z",
-            site=MagicMock(__str__=lambda self: "Site-01"),
+            site="Site-01",
             url="https://nautobot.example.com/device/123",
         )
 
@@ -56,14 +56,14 @@ class TestDeviceTools(unittest.TestCase):
 
     def test_list_devices_success(self):
         """Test successful device listing."""
-        # Create another mock device
+        # Create another mock device with JSON-serializable fields
         mock_device2 = MockRecord(
             id="device-456",
             name="test-device-2",
-            device_type=MagicMock(__str__=lambda self: "Switch"),
-            role=MagicMock(__str__=lambda self: "Access"),
-            location=MagicMock(__str__=lambda self: "DC-02"),
-            status=MagicMock(__str__=lambda self: "Active"),
+            device_type="Switch",
+            role="Access",
+            location="DC-02",
+            status="Active",
             platform=None,
             serial=None,
             primary_ip4=None,
@@ -83,7 +83,7 @@ class TestDeviceTools(unittest.TestCase):
         self.assertEqual(parsed[1]["name"], "test-device-2")
 
         # Verify client was called correctly
-        self.mock_client.dcim.devices.filter.assert_called_once_with(limit=10)
+        self.mock_client.dcim.devices.filter.assert_called_once_with(limit=10, depth=1)
         self.mock_context.info.assert_called()
 
     def test_list_devices_with_location_filter(self):
@@ -94,7 +94,7 @@ class TestDeviceTools(unittest.TestCase):
         result = list_devices_func(self.mock_context, limit=5, location="DC-01")
 
         # Verify client was called with location filter
-        self.mock_client.dcim.devices.filter.assert_called_once_with(location="DC-01", limit=5)
+        self.mock_client.dcim.devices.filter.assert_called_once_with(limit=5, depth=1, location="DC-01")
 
         # Verify empty result
         parsed = json.loads(result)
@@ -127,7 +127,7 @@ class TestDeviceTools(unittest.TestCase):
         assert parsed["device_type"] == "Router"
 
         # Verify client was called correctly
-        self.mock_client.dcim.devices.get.assert_called_with(id="device-123")
+        self.mock_client.dcim.devices.get.assert_called_with(depth=1, id="device-123")
 
     def test_get_device_by_name_fallback(self):
         """Test device retrieval by name when ID lookup fails."""
@@ -146,8 +146,8 @@ class TestDeviceTools(unittest.TestCase):
         # Verify both calls were made
         calls = self.mock_client.dcim.devices.get.call_args_list
         assert len(calls) == 2
-        assert calls[0][1] == {"id": "test-device"}
-        assert calls[1][1] == {"name": "test-device"}
+        assert calls[0][1] == {"depth": 1, "id": "test-device"}
+        assert calls[1][1] == {"depth": 1, "name": "test-device"}
 
     def test_get_device_not_found(self):
         """Test device not found scenario."""
@@ -165,20 +165,7 @@ class TestDeviceTools(unittest.TestCase):
 
     def test_create_device_success(self):
         """Test successful device creation."""
-        # Mock related object lookups
-        mock_device_type = MockRecord(id="type-123")
-        self.mock_client.dcim.device_types.get.return_value = mock_device_type
-
-        mock_role = MockRecord(id="role-123")
-        self.mock_client.extras.roles.get.return_value = mock_role
-
-        mock_location = MockRecord(id="location-123")
-        self.mock_client.dcim.locations.get.return_value = mock_location
-
-        mock_status = MockRecord(id="status-123")
-        self.mock_client.extras.statuses.get.return_value = mock_status
-
-        # Mock device creation
+        # Mock device creation (no object lookups in simplified version)
         self.mock_client.dcim.devices.create.return_value = self.mock_device
 
         create_device_func = self._register_and_get_function(2)
@@ -192,15 +179,15 @@ class TestDeviceTools(unittest.TestCase):
         assert parsed["data"]["name"] == "test-device"
         assert "created successfully" in parsed["message"]
 
-        # Verify all lookups were performed
-        self.mock_client.dcim.device_types.get.assert_called_once_with(model="Router")
-        self.mock_client.extras.roles.get.assert_called_once_with(name="Core")
-        self.mock_client.dcim.locations.get.assert_called_once_with(name="DC-01")
-        self.mock_client.extras.statuses.get.assert_called_once_with(name="active")
+        # Verify create was called with correct data
+        self.mock_client.dcim.devices.create.assert_called_once_with(
+            name="new-device", device_type="Router", role="Core", location="DC-01", status="active"
+        )
 
     def test_create_device_missing_device_type(self):
         """Test device creation with missing device type."""
-        self.mock_client.dcim.device_types.get.return_value = None
+        # Make the create method fail when called with invalid device_type
+        self.mock_client.dcim.devices.create.side_effect = Exception("Device type not found: NonexistentType")
 
         create_device_func = self._register_and_get_function(2)
         result = create_device_func(
@@ -229,8 +216,7 @@ class TestDeviceTools(unittest.TestCase):
         parsed = json.loads(result)
         assert parsed["success"] is True
         assert parsed["data"]["name"] == "test-device"
-        assert "status" in parsed["data"]["updated_fields"]
-        assert "comments" in parsed["data"]["updated_fields"]
+        # Device fields are updated on the mock object, we have the full device data
 
         # Verify device was saved
         assert hasattr(self.mock_device, "save")

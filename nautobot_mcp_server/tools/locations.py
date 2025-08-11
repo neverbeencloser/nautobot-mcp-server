@@ -3,6 +3,7 @@
 from typing import Optional
 
 from mcp.server.fastmcp import Context, FastMCP
+from pynautobot import RequestError
 
 from .base import NautobotToolBase
 
@@ -18,52 +19,32 @@ class LocationTools(NautobotToolBase):
         """
 
         @mcp.tool()
-        def nautobot_list_locations(ctx: Context, limit: int = 10, status: Optional[str] = None) -> str:
+        def nautobot_list_locations(ctx: Context, limit: int = 10, **kwargs) -> str:
             """List all locations in Nautobot.
 
             Args:
                 ctx: MCP context for logging and progress
                 limit: Number of locations to return (default: 10)
-                status: Filter locations by status (optional)
+                kwargs: Filter locations by kwargs (optional)
 
             Returns:
                 JSON string of location list
             """
-            ctx.info(f"Listing locations (limit={limit}, status={status})")
+            ctx.info(f"Listing locations (limit={limit}, kwargs={kwargs})")
 
             try:
                 client = self._get_client()
-                locations_query = client.dcim.locations
+                locations = client.dcim.locations
+                filter_kwargs = {}
 
-                if status:
-                    ctx.debug(f"Filtering by status: {status}")
-                    locations = locations_query.filter(status=status, limit=limit)
-                else:
-                    locations = locations_query.filter(limit=limit)
+                if "status" in kwargs:
+                    ctx.debug(f"Filtering by status: {kwargs['status']}")
+                    filter_kwargs["status"] = kwargs["status"]
 
-                result = []
-                for location in locations:
-                    location_info = {
-                        "id": str(location.id),
-                        "name": location.name,
-                        "natural_slug": location.natural_slug if hasattr(location, "natural_slug") else None,
-                        "tree_depth": location.tree_depth if hasattr(location, "tree_depth") else None,
-                        "status": str(location.status),
-                        "location_type": str(location.location_type)
-                        if hasattr(location, "location_type") and location.location_type
-                        else None,
-                        "parent": str(location.parent) if hasattr(location, "parent") and location.parent else None,
-                        "facility": location.facility if hasattr(location, "facility") else None,
-                        "description": location.description if hasattr(location, "description") else None,
-                        "time_zone": location.time_zone if hasattr(location, "time_zone") else None,
-                        "physical_address": location.physical_address
-                        if hasattr(location, "physical_address")
-                        else None,
-                    }
-                    result.append(location_info)
+                location_list = locations.filter(limit=limit, depth=1, **filter_kwargs)
 
-                ctx.info(f"Found {len(result)} locations")
-                return self.format_success(result)
+                ctx.info(f"Found {len(location_list)} locations")
+                return self.format_success([dict(location) for location in location_list])
 
             except Exception as e:
                 return self.log_and_return_error(ctx, "listing locations", e)
@@ -89,62 +70,19 @@ class LocationTools(NautobotToolBase):
                 try:
                     location = locations.get(id=location_id)
                     ctx.debug(f"Found location by ID: {location_id}")
-                except Exception:
+                except RequestError:
                     # If not found by ID, try by name
                     try:
                         location = locations.get(name=location_id)
                         ctx.debug(f"Found location by name: {location_id}")
-                    except Exception:
+                    except RequestError:
                         # If not found by name, try by natural_slug
                         location = locations.get(natural_slug=location_id)
                         ctx.debug(f"Found location by natural_slug: {location_id}")
 
                 if location:
-                    location_info = {
-                        "id": str(location.id),
-                        "name": location.name,
-                        "natural_slug": location.natural_slug if hasattr(location, "natural_slug") else None,
-                        "tree_depth": location.tree_depth if hasattr(location, "tree_depth") else None,
-                        "time_zone": location.time_zone if hasattr(location, "time_zone") else None,
-                        "circuit_count": location.circuit_count if hasattr(location, "circuit_count") else 0,
-                        "device_count": location.device_count if hasattr(location, "device_count") else 0,
-                        "prefix_count": location.prefix_count if hasattr(location, "prefix_count") else 0,
-                        "rack_count": location.rack_count if hasattr(location, "rack_count") else 0,
-                        "virtual_machine_count": location.virtual_machine_count
-                        if hasattr(location, "virtual_machine_count")
-                        else 0,
-                        "vlan_count": location.vlan_count if hasattr(location, "vlan_count") else 0,
-                        "status": str(location.status),
-                        "location_type": str(location.location_type)
-                        if hasattr(location, "location_type") and location.location_type
-                        else None,
-                        "parent": str(location.parent) if hasattr(location, "parent") and location.parent else None,
-                        "tenant": str(location.tenant) if hasattr(location, "tenant") and location.tenant else None,
-                        "facility": location.facility if hasattr(location, "facility") else None,
-                        "asn": location.asn if hasattr(location, "asn") else None,
-                        "description": location.description if hasattr(location, "description") else None,
-                        "physical_address": location.physical_address
-                        if hasattr(location, "physical_address")
-                        else None,
-                        "shipping_address": location.shipping_address
-                        if hasattr(location, "shipping_address")
-                        else None,
-                        "latitude": str(location.latitude)
-                        if hasattr(location, "latitude") and location.latitude
-                        else None,
-                        "longitude": str(location.longitude)
-                        if hasattr(location, "longitude") and location.longitude
-                        else None,
-                        "contact_name": location.contact_name if hasattr(location, "contact_name") else None,
-                        "contact_phone": location.contact_phone if hasattr(location, "contact_phone") else None,
-                        "contact_email": location.contact_email if hasattr(location, "contact_email") else None,
-                        "comments": location.comments if hasattr(location, "comments") else None,
-                        "created": str(location.created) if hasattr(location, "created") else None,
-                        "last_updated": str(location.last_updated) if hasattr(location, "last_updated") else None,
-                    }
-
                     ctx.info(f"Successfully retrieved location: {location.name}")
-                    return self.format_success(location_info)
+                    return self.format_success(dict(location))
                 else:
                     ctx.warning(f"Location not found: {location_id}")
                     return self.format_error(f"Location not found: {location_id}")
@@ -266,18 +204,8 @@ class LocationTools(NautobotToolBase):
                 ctx.info(f"Creating location with data: {location_data}")
                 new_location = client.dcim.locations.create(**location_data)
 
-                location_info = {
-                    "id": str(new_location.id),
-                    "name": new_location.name,
-                    "natural_slug": new_location.natural_slug if hasattr(new_location, "natural_slug") else None,
-                    "status": str(new_location.status),
-                    "location_type": str(new_location.location_type),
-                    "created": str(new_location.created),
-                    "url": new_location.url,
-                }
-
                 ctx.info(f"Successfully created location: {new_location.name}")
-                return self.format_success(location_info, message="Location created successfully")
+                return self.format_success(dict(new_location), message="Location created successfully")
 
             except Exception as e:
                 return self.log_and_return_error(ctx, "creating location", e)
@@ -316,85 +244,14 @@ class LocationTools(NautobotToolBase):
                     ctx.warning(f"Location not found: {location_id}")
                     return self.format_error(f"Location not found: {location_id}")
 
-                # Process update fields
-                update_data = {}
-
-                # Handle status field
-                if "status" in kwargs:
-                    status_obj = client.extras.statuses.get(name=kwargs["status"])
-                    if status_obj:
-                        update_data["status"] = status_obj.id
-                    else:
-                        ctx.warning(f"Status not found: {kwargs['status']}")
-
-                # Handle location_type field
-                if "location_type" in kwargs:
-                    try:
-                        location_type_obj = client.dcim.location_types.get(kwargs["location_type"])
-                    except Exception:
-                        try:
-                            location_type_obj = client.dcim.location_types.get(name=kwargs["location_type"])
-                        except Exception:
-                            location_type_obj = None
-
-                    if location_type_obj:
-                        update_data["location_type"] = location_type_obj.id
-                    else:
-                        ctx.warning(f"Location type not found: {kwargs['location_type']}")
-
-                # Handle parent field
-                if "parent" in kwargs:
-                    if kwargs["parent"]:  # Non-empty parent
-                        try:
-                            parent_obj = client.dcim.locations.get(kwargs["parent"])
-                        except Exception:
-                            try:
-                                parent_obj = client.dcim.locations.get(name=kwargs["parent"])
-                            except Exception:
-                                parent_obj = None
-
-                        if parent_obj:
-                            update_data["parent"] = parent_obj.id
-                        else:
-                            ctx.warning(f"Parent location not found: {kwargs['parent']}")
-                    else:  # Empty parent means remove parent
-                        update_data["parent"] = None
-
-                # Handle simple fields
-                simple_fields = [
-                    "description",
-                    "facility",
-                    "asn",
-                    "time_zone",
-                    "physical_address",
-                    "shipping_address",
-                    "latitude",
-                    "longitude",
-                    "contact_name",
-                    "contact_phone",
-                    "contact_email",
-                    "comments",
-                ]
-                for field in simple_fields:
-                    if field in kwargs:
-                        update_data[field] = kwargs[field]
-
                 # Update the location
-                ctx.info(f"Updating location with data: {update_data}")
-                for key, value in update_data.items():
+                ctx.info(f"Updating location with data: {kwargs}")
+                for key, value in kwargs.items():
                     setattr(location, key, value)
                 location.save()
 
-                location_info = {
-                    "id": str(location.id),
-                    "name": location.name,
-                    "natural_slug": location.natural_slug if hasattr(location, "natural_slug") else None,
-                    "status": str(location.status),
-                    "updated_fields": list(update_data.keys()),
-                }
-
                 ctx.info(f"Successfully updated location: {location.name}")
-                return self.format_success(location_info, message="Location updated successfully")
+                return self.format_success(dict(location), message="Location updated successfully")
 
             except Exception as e:
                 return self.log_and_return_error(ctx, "updating location", e)

@@ -30,13 +30,13 @@ class TestJobTools(unittest.TestCase):
             id="job-123", name="test-job", slug="test-job", description="Test job description", enabled=True
         )
 
-        # Create simple mock job result
+        # Create simple mock job result with JSON-serializable fields
         self.mock_job_result = MockRecord(
             id="result-123",
             name="test-result",
-            status=MagicMock(__str__=lambda self: "Success"),
+            status="Success",
             created="2024-01-01T00:00:00Z",
-            job=MagicMock(__str__=lambda self: "test-job"),
+            job="test-job",
             completed="2024-01-01T00:01:00Z",
             log="Job execution log content",
         )
@@ -71,7 +71,7 @@ class TestJobTools(unittest.TestCase):
         assert parsed[1]["name"] == "another-job"
 
         # Verify client was called correctly
-        self.mock_client.extras.jobs.filter.assert_called_once_with(limit=20)
+        self.mock_client.extras.jobs.filter.assert_called_once_with(limit=20, depth=1)
         self.mock_context.info.assert_called()
 
     def test_list_jobs_exception(self):
@@ -126,7 +126,7 @@ class TestJobTools(unittest.TestCase):
         # Verify result
         parsed = json.loads(result)
         assert parsed["success"] is True
-        assert parsed["data"]["job_name"] == "test-job"
+        assert parsed["data"]["name"] == "Job Result"
         assert "started successfully" in parsed["message"]
 
     def test_run_job_not_found(self):
@@ -144,13 +144,13 @@ class TestJobTools(unittest.TestCase):
 
     def test_list_job_results_success(self):
         """Test successful job result listing."""
-        # Create another mock job result
+        # Create another mock job result with JSON-serializable fields
         mock_result2 = MockRecord(
             id="result-456",
             name="another-result",
-            status=MagicMock(__str__=lambda self: "Failed"),
+            status="Failed",
             created="2024-01-02T00:00:00Z",
-            job=MagicMock(__str__=lambda self: "another-job"),
+            job="another-job",
             completed="2024-01-02T00:01:00Z",
         )
 
@@ -226,8 +226,8 @@ class TestJobTools(unittest.TestCase):
         # Verify result
         parsed = json.loads(result)
         assert parsed["success"] is True
-        assert parsed["data"]["job_result_id"] == "result-123"
-        assert parsed["data"]["logs"] == "Job execution log content"
+        assert parsed["data"]["id"] == "result-123"
+        assert parsed["data"]["log"] == "Job execution log content"
 
         # Verify client was called correctly
         self.mock_client.extras.job_results.get.assert_called_with(id="result-123")

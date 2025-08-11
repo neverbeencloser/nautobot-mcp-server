@@ -32,26 +32,10 @@ class JobTools(NautobotToolBase):
 
             try:
                 client = self._get_client()
-                jobs = client.extras.jobs.filter(limit=limit)
+                job_list = client.extras.jobs.filter(limit=limit, depth=1)
 
-                result = []
-                for job in jobs:
-                    job_info = {
-                        "id": str(job.id),
-                        "name": job.name,
-                        "slug": job.slug if hasattr(job, "slug") else None,
-                        "description": job.description if hasattr(job, "description") else None,
-                        "module_name": job.module_name if hasattr(job, "module_name") else None,
-                        "job_class_name": job.job_class_name if hasattr(job, "job_class_name") else None,
-                        "enabled": job.enabled if hasattr(job, "enabled") else True,
-                        "has_sensitive_variables": job.has_sensitive_variables
-                        if hasattr(job, "has_sensitive_variables")
-                        else False,
-                    }
-                    result.append(job_info)
-
-                ctx.info(f"Found {len(result)} jobs")
-                return self.format_success(result)
+                ctx.info(f"Found {len(job_list)} jobs")
+                return self.format_success([dict(job) for job in job_list])
 
             except Exception as e:
                 return self.log_and_return_error(ctx, "listing jobs", e)
@@ -88,25 +72,8 @@ class JobTools(NautobotToolBase):
                             break
 
                 if job:
-                    job_info = {
-                        "id": str(job.id),
-                        "name": job.name,
-                        "slug": job.slug if hasattr(job, "slug") else None,
-                        "description": job.description if hasattr(job, "description") else None,
-                        "module_name": job.module_name if hasattr(job, "module_name") else None,
-                        "job_class_name": job.job_class_name if hasattr(job, "job_class_name") else None,
-                        "enabled": job.enabled if hasattr(job, "enabled") else True,
-                        "has_sensitive_variables": job.has_sensitive_variables
-                        if hasattr(job, "has_sensitive_variables")
-                        else False,
-                        "supports_dryrun": job.supports_dryrun if hasattr(job, "supports_dryrun") else False,
-                        "approval_required": job.approval_required if hasattr(job, "approval_required") else False,
-                        "soft_time_limit": job.soft_time_limit if hasattr(job, "soft_time_limit") else None,
-                        "time_limit": job.time_limit if hasattr(job, "time_limit") else None,
-                    }
-
                     ctx.info(f"Successfully retrieved job: {job.name}")
-                    return self.format_success(job_info)
+                    return self.format_success(dict(job))
                 else:
                     ctx.warning(f"Job not found: {job_id}")
                     return self.format_error(f"Job not found: {job_id}")
@@ -173,16 +140,8 @@ class JobTools(NautobotToolBase):
 
                 result = job.run(**job_kwargs)
 
-                job_result_info = {
-                    "job_name": job.name,
-                    "job_id": str(job.id),
-                    "result_id": str(result.id) if hasattr(result, "id") else None,
-                    "status": "Job started",
-                    "parameters": job_kwargs,
-                }
-
                 ctx.info(f"Successfully started job: {job.name}")
-                return self.format_success(job_result_info, message=f"Job '{job.name}' started successfully")
+                return self.format_success(dict(result), message=f"Job '{job.name}' started successfully")
 
             except Exception as e:
                 return self.log_and_return_error(ctx, "running job", e)
@@ -217,22 +176,8 @@ class JobTools(NautobotToolBase):
 
                 results = job_results.filter(**filters)
 
-                result_list = []
-                for result in results:
-                    result_info = {
-                        "id": str(result.id),
-                        "name": result.name if hasattr(result, "name") else None,
-                        "job": str(result.job) if hasattr(result, "job") else None,
-                        "status": str(result.status) if hasattr(result, "status") else None,
-                        "created": str(result.created) if hasattr(result, "created") else None,
-                        "completed": str(result.completed) if hasattr(result, "completed") else None,
-                        "user": str(result.user) if hasattr(result, "user") else None,
-                        "task_kwargs": result.task_kwargs if hasattr(result, "task_kwargs") else None,
-                    }
-                    result_list.append(result_info)
-
-                ctx.info(f"Found {len(result_list)} job results")
-                return self.format_success(result_list)
+                ctx.info(f"Found {len(results)} job results")
+                return self.format_success([dict(result) for result in results])
 
             except Exception as e:
                 return self.log_and_return_error(ctx, "listing job results", e)
@@ -257,23 +202,8 @@ class JobTools(NautobotToolBase):
                 result = job_results.get(id=result_id)
 
                 if result:
-                    result_info = {
-                        "id": str(result.id),
-                        "name": result.name if hasattr(result, "name") else None,
-                        "job": str(result.job) if hasattr(result, "job") else None,
-                        "status": str(result.status) if hasattr(result, "status") else None,
-                        "created": str(result.created) if hasattr(result, "created") else None,
-                        "completed": str(result.completed) if hasattr(result, "completed") else None,
-                        "user": str(result.user) if hasattr(result, "user") else None,
-                        "task_kwargs": result.task_kwargs if hasattr(result, "task_kwargs") else None,
-                        "job_id": str(result.job_id) if hasattr(result, "job_id") else None,
-                        "date_done": str(result.date_done) if hasattr(result, "date_done") else None,
-                        "traceback": result.traceback if hasattr(result, "traceback") else None,
-                        "result": result.result if hasattr(result, "result") else None,
-                    }
-
                     ctx.info(f"Successfully retrieved job result: {result_id}")
-                    return self.format_success(result_info)
+                    return self.format_success(dict(result))
                 else:
                     ctx.warning(f"Job result not found: {result_id}")
                     return self.format_error(f"Job result not found: {result_id}")
@@ -301,19 +231,8 @@ class JobTools(NautobotToolBase):
                 result = job_results.get(id=result_id)
 
                 if result:
-                    log_info = {
-                        "job_result_id": str(result.id),
-                        "job_name": result.name if hasattr(result, "name") else None,
-                        "status": str(result.status) if hasattr(result, "status") else None,
-                        "logs": result.log if hasattr(result, "log") else "",
-                    }
-
-                    # Also include general result info
-                    if hasattr(result, "traceback") and result.traceback:
-                        log_info["traceback"] = result.traceback
-
                     ctx.info(f"Successfully retrieved logs for job result: {result_id}")
-                    return self.format_success(log_info, message="Job logs retrieved successfully")
+                    return self.format_success(dict(result), message="Job logs retrieved successfully")
                 else:
                     ctx.warning(f"Job result not found: {result_id}")
                     return self.format_error(f"Job result not found: {result_id}")

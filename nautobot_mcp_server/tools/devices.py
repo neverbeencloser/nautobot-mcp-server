@@ -1,7 +1,5 @@
 """Device-related tools for Nautobot MCP Server."""
 
-from typing import Optional
-
 from mcp.server.fastmcp import Context, FastMCP
 from pynautobot import RequestError
 
@@ -19,49 +17,32 @@ class DeviceTools(NautobotToolBase):
         """
 
         @mcp.tool()
-        def nautobot_list_devices(ctx: Context, limit: int = 10, location: Optional[str] = None) -> str:
+        def nautobot_list_devices(ctx: Context, limit: int = 10, **kwargs) -> str:
             """List all devices in Nautobot.
 
             Args:
                 ctx: MCP context for logging and progress
                 limit: Number of devices to return (default: 10)
-                location: Filter devices by location name (optional)
+                kwargs: Filter devices by kwargs (optional)
 
             Returns:
                 JSON string of device list
             """
-            ctx.info(f"Listing devices (limit={limit}, location={location})")
+            ctx.info(f"Listing devices (limit={limit}, kwargs={kwargs})")
 
             try:
                 client = self._get_client()
                 devices = client.dcim.devices
+                filter_kwargs = {}
 
-                if location:
-                    ctx.debug(f"Filtering by location: {location}")
-                    device_list = devices.filter(location=location, limit=limit)
-                else:
-                    device_list = devices.filter(limit=limit)
+                if "location" in kwargs:
+                    ctx.debug(f"Filtering by location: {kwargs['location']}")
+                    filter_kwargs["location"] = kwargs["location"]
 
-                result = []
-                for device in device_list:
-                    device_info = {
-                        "id": str(device.id),
-                        "name": device.name,
-                        "device_type": str(device.device_type) if device.device_type else None,
-                        "role": str(device.role) if device.role else None,
-                        "location": str(device.location) if device.location else None,
-                        "status": str(device.status) if device.status else None,
-                        "primary_ip4": str(device.primary_ip4)
-                        if hasattr(device, "primary_ip4") and device.primary_ip4
-                        else None,
-                        "primary_ip6": str(device.primary_ip6)
-                        if hasattr(device, "primary_ip6") and device.primary_ip6
-                        else None,
-                    }
-                    result.append(device_info)
+                device_list = devices.filter(limit=limit, depth=1, **filter_kwargs)
 
-                ctx.info(f"Found {len(result)} devices")
-                return self.format_success(result)
+                ctx.info(f"Found {len(device_list)} devices")
+                return self.format_success([dict(device) for device in device_list])
 
             except Exception as e:
                 return self.log_and_return_error(ctx, "listing devices", e)
@@ -85,31 +66,16 @@ class DeviceTools(NautobotToolBase):
 
                 # Try to get by ID first (UUID)
                 try:
-                    device = devices.get(id=device_id)
+                    device = devices.get(depth=1, id=device_id)
                     ctx.debug(f"Found device by ID: {device_id}")
                 except RequestError:
                     # If not found by ID, try by name
                     ctx.debug(f"Searching device by name: {device_id}")
-                    device = devices.get(name=device_id)
+                    device = devices.get(depth=1, name=device_id)
 
                 if device:
-                    device_info = {
-                        "id": str(device.id),
-                        "name": device.name,
-                        "device_type": str(device.device_type) if device.device_type else None,
-                        "role": str(device.role) if device.role else None,
-                        "location": str(device.location) if device.location else None,
-                        "status": str(device.status) if device.status else None,
-                        "platform": str(device.platform) if device.platform else None,
-                        "serial": device.serial if device.serial else None,
-                        "asset_tag": device.asset_tag if device.asset_tag else None,
-                        "primary_ip4": str(device.primary_ip4) if device.primary_ip4 else None,
-                        "primary_ip6": str(device.primary_ip6) if device.primary_ip6 else None,
-                        "comments": device.comments if device.comments else None,
-                    }
-
                     ctx.info(f"Successfully retrieved device: {device.name}")
-                    return self.format_success(device_info)
+                    return self.format_success(dict(device))
                 else:
                     ctx.warning(f"Device not found: {device_id}")
                     return self.format_error(f"Device not found: {device_id}")
@@ -125,10 +91,10 @@ class DeviceTools(NautobotToolBase):
 
             Args:
                 ctx: MCP context for logging and progress
-                name: Device name
-                device_type: Device type name
-                role: Device role name
-                location: Location name
+                name: Device name or uuid
+                device_type: Device type name or uuid
+                role: Device role name or uuid
+                location: Location name or uuid
                 status: Device status (default: "active")
 
             Returns:
@@ -139,56 +105,20 @@ class DeviceTools(NautobotToolBase):
             try:
                 client = self._get_client()
 
-                # Get the related objects first
-                ctx.debug(f"Looking up device type: {device_type}")
-                device_type_obj = client.dcim.device_types.get(model=device_type)
-                if not device_type_obj:
-                    ctx.error(f"Device type not found: {device_type}")
-                    return self.format_error(f"Device type not found: {device_type}")
-
-                ctx.debug(f"Looking up role: {role}")
-                role_obj = client.extras.roles.get(name=role)
-                if not role_obj:
-                    ctx.error(f"Role not found: {role}")
-                    return self.format_error(f"Role not found: {role}")
-
-                ctx.debug(f"Looking up location: {location}")
-                location_obj = client.dcim.locations.get(name=location)
-                if not location_obj:
-                    ctx.error(f"Location not found: {location}")
-                    return self.format_error(f"Location not found: {location}")
-
-                ctx.debug(f"Looking up status: {status}")
-                status_obj = client.extras.statuses.get(name=status)
-                if not status_obj:
-                    ctx.error(f"Status not found: {status}")
-                    return self.format_error(f"Status not found: {status}")
-
                 # Create the device
                 device_data = {
                     "name": name,
-                    "device_type": device_type_obj.id,
-                    "role": role_obj.id,
-                    "location": location_obj.id,
-                    "status": status_obj.id,
+                    "device_type": device_type,
+                    "role": role,
+                    "location": location,
+                    "status": status,
                 }
 
                 ctx.info(f"Creating device with data: {device_data}")
                 new_device = client.dcim.devices.create(**device_data)
 
-                device_info = {
-                    "id": str(new_device.id),
-                    "name": new_device.name,
-                    "device_type": str(new_device.device_type) if new_device.device_type else None,
-                    "role": str(new_device.role) if new_device.role else None,
-                    "location": str(new_device.location) if new_device.location else None,
-                    "status": str(new_device.status) if new_device.status else None,
-                    "created": str(new_device.created) if new_device.created else None,
-                    "url": new_device.url if hasattr(new_device, "url") else None,
-                }
-
                 ctx.info(f"Successfully created device: {new_device.name}")
-                return self.format_success(device_info, message="Device created successfully")
+                return self.format_success(dict(new_device), message="Device created successfully")
 
             except Exception as e:
                 return self.log_and_return_error(ctx, "creating device", e)
@@ -223,55 +153,14 @@ class DeviceTools(NautobotToolBase):
                     ctx.warning(f"Device not found: {device_id}")
                     return self.format_error(f"Device not found: {device_id}")
 
-                # Process update fields
-                update_data = {}
-
-                # Handle special fields that need object lookups
-                if "status" in kwargs:
-                    status_obj = client.extras.statuses.get(name=kwargs["status"])
-                    if status_obj:
-                        update_data["status"] = status_obj.id
-                    else:
-                        ctx.warning(f"Status not found: {kwargs['status']}")
-
-                if "role" in kwargs:
-                    role_obj = client.extras.roles.get(name=kwargs["role"])
-                    if role_obj:
-                        update_data["role"] = role_obj.id
-                    else:
-                        ctx.warning(f"Role not found: {kwargs['role']}")
-
-                if "location" in kwargs:
-                    location_obj = client.dcim.locations.get(name=kwargs["location"])
-                    if location_obj:
-                        update_data["location"] = location_obj.id
-                    else:
-                        ctx.warning(f"Location not found: {kwargs['location']}")
-
-                # Handle simple fields
-                simple_fields = ["comments", "serial", "asset_tag"]
-                for field in simple_fields:
-                    if field in kwargs:
-                        update_data[field] = kwargs[field]
-
                 # Update the device
-                ctx.info(f"Updating device with data: {update_data}")
-                for key, value in update_data.items():
+                ctx.info(f"Updating device with data: {kwargs}")
+                for key, value in kwargs.items():
                     setattr(device, key, value)
                 device.save()
 
-                device_info = {
-                    "id": str(device.id),
-                    "name": device.name,
-                    "device_type": str(device.device_type) if device.device_type else None,
-                    "role": str(device.role) if device.role else None,
-                    "site": str(device.site) if device.site else None,
-                    "status": str(device.status) if device.status else None,
-                    "updated_fields": list(update_data.keys()),
-                }
-
                 ctx.info(f"Successfully updated device: {device.name}")
-                return self.format_success(device_info, message="Device updated successfully")
+                return self.format_success(dict(device), message="Device updated successfully")
 
             except Exception as e:
                 return self.log_and_return_error(ctx, "updating device", e)
