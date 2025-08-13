@@ -26,7 +26,7 @@ class JobTools(NautobotToolBase):
                 limit: Number of jobs to return (default: 20)
 
             Returns:
-                JSON string of job list
+                YAML string of job list
             """
             ctx.info(f"Listing jobs (limit={limit})")
 
@@ -65,7 +65,7 @@ class JobTools(NautobotToolBase):
                 job_id: Job ID (UUID), name, or slug
 
             Returns:
-                JSON string of job details
+                YAML string of job details
             """
             ctx.info(f"Getting job: {job_id}")
 
@@ -124,7 +124,7 @@ class JobTools(NautobotToolBase):
                 **kwargs: Additional job parameters
 
             Returns:
-                JSON string with job execution details
+                YAML string with job execution details
             """
             ctx.info(f"Running job: {job_name}")
 
@@ -200,7 +200,7 @@ class JobTools(NautobotToolBase):
                 status: Filter by status (optional)
 
             Returns:
-                JSON string of job result list
+                YAML string of job result list
             """
             ctx.info(f"Listing job results (limit={limit}, job_name={job_name}, status={status})")
 
@@ -246,7 +246,7 @@ class JobTools(NautobotToolBase):
                 result_id: Job result ID (UUID)
 
             Returns:
-                JSON string of job result details
+                YAML string of job result details
             """
             ctx.info(f"Getting job result: {result_id}")
 
@@ -290,7 +290,7 @@ class JobTools(NautobotToolBase):
                 result_id: Job result ID (UUID)
 
             Returns:
-                JSON string of job logs
+                YAML string of job logs
             """
             ctx.info(f"Getting job logs for result: {result_id}")
 

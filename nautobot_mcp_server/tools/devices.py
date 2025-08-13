@@ -1,6 +1,6 @@
 """Device-related tools for Nautobot MCP Server."""
 
-from typing import Any
+from typing import Any, Literal
 
 from mcp.server.fastmcp import Context, FastMCP
 from pynautobot import RequestError
@@ -43,7 +43,7 @@ class DeviceTools(NautobotToolBase):
                 status: Optional device status filter to apply (name or UUID).
 
             Returns:
-                JSON string of device list
+                YAML string of device list
             """
             ctx.info(
                 f"Listing devices (depth={depth}, limit={limit}, "
@@ -103,7 +103,7 @@ class DeviceTools(NautobotToolBase):
                 depth: Depth of the device details to return; default returns 1 level of nested objects.
 
             Returns:
-                JSON string of device details
+                YAML string of device details
             """
             ctx.info(f"Getting device: {device_id}")
 
@@ -144,7 +144,7 @@ class DeviceTools(NautobotToolBase):
             custom_fields: dict[str, str] | None = None,
             device_redundancy_group: str | None = None,
             device_redundancy_group_priority: int | None = None,
-            face: str | None = None,
+            face: Literal["Front", "Rear"] | None = None,
             parent_bay: str | None = None,
             platform: str | None = None,
             position: int | None = None,
@@ -162,7 +162,43 @@ class DeviceTools(NautobotToolBase):
             vc_priority: int | None = None,
             virtual_chassis: str | None = None,
         ) -> str:
-            """Create device. Required: name, device_type, location, role, status."""
+            """
+            Create a new device in Nautobot.
+
+            Args:
+                ctx: MCP context for logging and progress
+                name: Device name (required)
+                device_type: Device type (UUID; required)
+                location: Device location (UUID or name; required)
+                role: Device role (UUID or name; required)
+                status: Device status (UUID or name; name should be capitalized; required)
+                asset_tag: Optional asset tag for the device
+                cluster: Optional cluster (UUID or name)
+                comments: Optional comments for the device
+                custom_fields: Optional custom fields as a dictionary
+                device_redundancy_group: Optional device redundancy group (UUID or name)
+                device_redundancy_group_priority: Optional priority for redundancy group
+                face: Optional face of the device
+                parent_bay: Optional parent bay (UUID or name)
+                platform: Optional platform (UUID or name)
+                position: Optional position in the rack
+                primary_ip4: Optional primary IPv4 address
+                primary_ip6: Optional primary IPv6 address
+                rack: Optional rack (UUID or name)
+                relationships: Optional relationships as a dictionary
+                serial: Optional serial number for the device
+                secrets_group: Optional secrets group (UUID or name)
+                software_image_files: Optional list of software image files
+                software_version: Optional software version (UUID or name)
+                tags: Optional list of tags (names)
+                tenant: Optional tenant (UUID or name)
+                vc_position: Optional virtual chassis position
+                vc_priority: Optional virtual chassis priority
+                virtual_chassis: Optional virtual chassis (UUID or name)
+
+            Returns:
+                YAML string of created device details or error message
+            """
             ctx.info(f"Creating device: {name}")
 
             try:
@@ -215,7 +251,7 @@ class DeviceTools(NautobotToolBase):
             """
             Update device fields for an existing device.
 
-            Use 'schema://device/fields' MCP Resource to get available fields.
+            Read 'schema://device/fields' MCP Resource to see possible update fields.
 
             Args:
                 ctx: MCP context for logging and progress
@@ -223,7 +259,7 @@ class DeviceTools(NautobotToolBase):
                 updates: Field updates dict. Set None to clear fields.
 
             Returns:
-                JSON string of updated device details or error message
+                YAML string of updated device details or error message
             """
             ctx.info(f"Updating device: {device_id}")
 
@@ -284,7 +320,7 @@ class DeviceTools(NautobotToolBase):
                 device_id: Device ID (UUID)
 
             Returns:
-                JSON string confirming deletion
+                YAML string confirming deletion
             """
             ctx.info(f"Deleting device: {device_id}")
 

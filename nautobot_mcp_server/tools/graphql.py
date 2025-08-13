@@ -27,7 +27,7 @@ class GraphQLTools(NautobotToolBase):
                 variables: Optional dictionary of variables for the query
 
             Returns:
-                JSON string of GraphQL results
+                YAML string of GraphQL results
             """
             ctx.info(f"Running GraphQL query: {query}, variables: {variables}")
 

@@ -119,7 +119,7 @@ To add new Nautobot resources or operations:
 4. Update tests and documentation
 
 ## To-Do
-- Containerize the MCP server for flexible deployment
+- Containerize the MCP server or support pipx/uvx installation for flexible deployment
 - Add support for core Nautobot resources
 - Improve search, filtering functionality
 

@@ -39,7 +39,7 @@ class LocationTools(NautobotToolBase):
                 location_type: Location type name or ID to filter by (optional).
 
             Returns:
-                JSON string of location list
+                YAML string of location list
             """
             ctx.info(
                 f"Listing locations (depth={depth}, limit={limit}, offset={offset}, location_type={location_type})"
@@ -92,7 +92,7 @@ class LocationTools(NautobotToolBase):
                 depth: Depth of the device details to return; default returns 1 level of nested objects.
 
             Returns:
-                JSON string of location details
+                YAML string of location details
             """
             ctx.info(f"Getting location: {location_id}")
 
@@ -158,7 +158,7 @@ class LocationTools(NautobotToolBase):
                 contact_email: Contact email (optional)
 
             Returns:
-                JSON string of created location details
+                YAML string of created location details
             """
             ctx.info(f"Creating location: {name}")
 
@@ -250,7 +250,7 @@ class LocationTools(NautobotToolBase):
                 updates: Field updates dict. Set None to clear fields.
 
             Returns:
-                JSON string of updated location details or error message
+                YAML string of updated location details or error message
             """
             ctx.info(f"Updating location: {location_id}")
 
@@ -310,7 +310,7 @@ class LocationTools(NautobotToolBase):
                 location_id: Location ID (UUID)
 
             Returns:
-                JSON string confirming deletion
+                YAML string confirming deletion
             """
             ctx.info(f"Deleting location: {location_id}")
 
