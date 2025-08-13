@@ -22,7 +22,7 @@ class TestNautobotToolBase(unittest.TestCase):
         error_msg = "Test error message"
         result = NautobotToolBase.format_error(error_msg)
 
-        expected = json.dumps({"error": error_msg})
+        expected = json.dumps({"error": error_msg}, separators=(",", ":"))
         self.assertEqual(result, expected)
 
         # Verify it's valid JSON
@@ -36,7 +36,7 @@ class TestNautobotToolBase(unittest.TestCase):
 
         result = NautobotToolBase.format_success(data, message)
 
-        expected = json.dumps({"success": True, "message": message, "data": data}, indent=2)
+        expected = json.dumps({"success": True, "message": message, "data": data}, separators=(",", ":"))
         self.assertEqual(result, expected)
 
         # Verify it's valid JSON
@@ -51,7 +51,7 @@ class TestNautobotToolBase(unittest.TestCase):
 
         result = NautobotToolBase.format_success(data)
 
-        expected = json.dumps(data, indent=2)
+        expected = json.dumps(data, separators=(",", ":"))
         self.assertEqual(result, expected)
 
         # Verify it's valid JSON
@@ -64,7 +64,7 @@ class TestNautobotToolBase(unittest.TestCase):
 
         result = NautobotToolBase.format_success(data)
 
-        expected = json.dumps(data, indent=2)
+        expected = json.dumps(data, separators=(",", ":"))
         self.assertEqual(result, expected)
 
         # Verify it's valid JSON
@@ -87,7 +87,7 @@ class TestNautobotToolBase(unittest.TestCase):
 
         # Verify correct error response format
         expected_error_msg = f"Error {operation}: {str(error)}"
-        expected = json.dumps({"error": expected_error_msg})
+        expected = json.dumps({"error": expected_error_msg}, separators=(",", ":"))
         self.assertEqual(result, expected)
 
     def test_log_and_return_error_with_complex_exception(self):
@@ -97,7 +97,7 @@ class TestNautobotToolBase(unittest.TestCase):
         mock_context = Mock()
 
         operation = "complex operation"
-        error = ValueError("Complex error with special chars: !@#$%^&*()")
+        error = ValueError("Complex error with special chars:!@#$%^&*()")
 
         result = tool.log_and_return_error(mock_context, operation, error)
 

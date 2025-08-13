@@ -27,7 +27,7 @@ class NautobotToolBase:
         Returns:
             JSON formatted error string
         """
-        return json.dumps({"error": error_msg})
+        return json.dumps({"error": error_msg}, separators=(",", ":"))
 
     @staticmethod
     def format_success(data: Any, message: Optional[str] = None) -> str:
@@ -41,8 +41,8 @@ class NautobotToolBase:
             JSON formatted success response
         """
         if message:
-            return json.dumps({"success": True, "message": message, "data": data}, indent=2)
-        return json.dumps(data, indent=2)
+            return json.dumps({"success": True, "message": message, "data": data}, separators=(",", ":"))
+        return json.dumps(data, separators=(",", ":"))
 
     def log_and_return_error(self, ctx: Context, operation: str, error: Exception) -> str:
         """Log an error and return formatted error response.

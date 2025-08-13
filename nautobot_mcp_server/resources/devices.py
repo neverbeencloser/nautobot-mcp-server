@@ -54,7 +54,7 @@ class DeviceSchemaResource(NautobotResourceBase):
             Returns a YAML string describing all device fields that can be used
             in create and update operations.
             """
-            return self.format_yaml(self.DEVICE_FIELDS)
+            return self.format_json(self.DEVICE_FIELDS)
 
         @mcp.resource("schema://device/required-for-create")
         def get_device_required_fields() -> str:
@@ -70,7 +70,7 @@ class DeviceSchemaResource(NautobotResourceBase):
                 "required_for_create": required_fields,
                 "note": "These fields are ONLY required when creating a new device. Updates can modify any subset of fields.",
             }
-            return self.format_yaml(data)
+            return self.format_json(data)
 
         @mcp.resource("schema://device/examples")
         def get_device_examples() -> str:
@@ -87,4 +87,4 @@ class DeviceSchemaResource(NautobotResourceBase):
                 "update_multi": {"location": "dc2", "rack": "R05", "position": 10},
                 "update_clear_fields": {"asset_tag": None, "serial": None},
             }
-            return self.format_yaml(examples)
+            return self.format_json(examples)
