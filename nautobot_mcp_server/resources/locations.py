@@ -41,7 +41,7 @@ class LocationSchemaResource(NautobotResourceBase):
             Returns a YAML string describing all location fields that can be used
             in create and update operations.
             """
-            return self.format_yaml(self.LOCATION_FIELDS)
+            return self.format_json(self.LOCATION_FIELDS)
 
         @mcp.resource("schema://location/required-for-create")
         def get_location_required_fields() -> str:
@@ -57,7 +57,7 @@ class LocationSchemaResource(NautobotResourceBase):
                 "required_for_create": required_fields,
                 "note": "These fields are ONLY required when creating a new location. Updates can modify any subset of fields.",
             }
-            return self.format_yaml(data)
+            return self.format_json(data)
 
         @mcp.resource("schema://location/examples")
         def get_location_examples() -> str:
@@ -77,4 +77,4 @@ class LocationSchemaResource(NautobotResourceBase):
                 },
                 "update_clear_fields": {"contact_phone": None, "contact_email": None},
             }
-            return self.format_yaml(examples)
+            return self.format_json(examples)

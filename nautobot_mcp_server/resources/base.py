@@ -9,7 +9,8 @@ import yaml
 class NautobotResourceBase:
     """Base class for Nautobot resource implementations."""
 
-    def format_yaml(self, data: Any) -> str:
+    @staticmethod
+    def format_yaml(data: Any) -> str:
         """Format data as YAML string.
 
         Args:
@@ -20,7 +21,8 @@ class NautobotResourceBase:
         """
         return yaml.dump(data, default_flow_style=False, sort_keys=False, allow_unicode=True, indent=2)
 
-    def format_json(self, data: Any) -> str:
+    @staticmethod
+    def format_json(data: Any) -> str:
         """Format data as JSON string.
 
         Args:
@@ -29,4 +31,4 @@ class NautobotResourceBase:
         Returns:
             JSON-formatted string
         """
-        return json.dumps(data, indent=2, ensure_ascii=False)
+        return json.dumps(data, ensure_ascii=False, separators=(",", ":"))
