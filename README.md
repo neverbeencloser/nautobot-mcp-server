@@ -1,6 +1,6 @@
 # Nautobot MCP Server
 
-An MCP (Model Context Protocol) server for interfacing with Nautobot API, enabling AI agents to perform CRUD operations on Nautobot objects and manage jobs.
+An MCP (Model Context Protocol) server for interfacing with [Nautobot](https://github.com/nautobot/nautobot), enabling AI agents to perform CRUD operations on Nautobot objects and manage jobs.
 
 ## ⚠️ New Project: Under Active Development ⚠️
 
